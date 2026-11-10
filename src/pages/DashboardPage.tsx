@@ -31,13 +31,14 @@ export default function DashboardPage() {
   const name = data?.profile.displayName || user?.displayName
 
   return (
-    <div className="space-y-4">
-      <header>
-        <p className="text-sm text-ink-500">{greeting()}{name ? `، ${name}` : ''} 👋</p>
-        <h1 className="mt-1 text-3xl font-bold text-ink-900">وش أسوي اليوم؟</h1>
-        <p className="mt-1 text-xs text-ink-500">{formatWeekday(today)} {formatDate(today)} · {formatHijri(today)}</p>
+    <div className="space-y-6">
+      <header className="rounded-3xl bg-gradient-to-bl from-emerald-950 via-teal-900 to-emerald-700 px-6 py-8 text-white shadow-lg shadow-emerald-950/10 sm:px-8">
+        <p className="text-sm text-emerald-100">{greeting()}{name ? `، ${name}` : ''} 👋</p>
+        <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">وش أسوي اليوم؟</h1>
+        <p className="mt-3 text-xs text-emerald-100">{formatWeekday(today)} {formatDate(today)} · {formatHijri(today)}</p>
       </header>
 
+      <nav aria-label="إجراءات سريعة" className="grid grid-cols-3 gap-2 sm:gap-3"><Link to="/budget#add" className="rounded-2xl border border-ink-100 bg-white p-4 text-center text-sm font-bold text-brand-700 shadow-sm hover:border-brand-500">＋ مصروف</Link><Link to="/goals" className="rounded-2xl border border-ink-100 bg-white p-4 text-center text-sm font-bold text-brand-700 shadow-sm hover:border-brand-500">◎ أهدافي</Link><Link to="/challenges" className="rounded-2xl border border-ink-100 bg-white p-4 text-center text-sm font-bold text-brand-700 shadow-sm hover:border-brand-500">🏆 التحديات</Link></nav>
       {loading && !data && <PageLoader />}
       {error && (
         <Alert tone="error">
