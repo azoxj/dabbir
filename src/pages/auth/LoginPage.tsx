@@ -53,8 +53,7 @@ export default function LoginPage() {
         {error && <Alert tone="error">{error}</Alert>}
         <Button type="submit" block loading={loading}>دخول</Button>
       </form>
-      <Divider />
-      <GoogleButton onError={setError} />
+      {service.supportsGoogle && <><Divider /><GoogleButton onError={setError} /></>}
       {service.signInAsGuest && (
         <Button type="button" variant="ghost" block className="mt-3" onClick={guest} disabled={loading}>
           جرّب التطبيق ببيانات تجريبية
