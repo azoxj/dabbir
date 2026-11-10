@@ -1,0 +1,12 @@
+[
+  {
+    "id": "08fca860-7258-4400-b32f-8537d74758ce",
+    "email": "live-42847006968-a@example.test",
+    "hash": "$2a$10$DN76dEtpaivMD5i39k2HDOtUQYD2FBCsqsEGE.ppiOnC/08newJ.y"
+  },
+  {
+    "id": "b6773062-16c7-4545-b2cc-b6b7cc3488cf",
+    "email": "live-42847006968-b@example.test",
+    "hash": "$2a$10$ICu7JTNKINtOduhoDocn0uqz8S5AGplc1hC3jBkHK0rSZJT.KbEdS"
+  }
+]
