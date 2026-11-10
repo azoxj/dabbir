@@ -35,13 +35,9 @@ jobs:
       - run: npm test
       - name: RLS / database tests (throwaway local PostgreSQL)
         run: npm run test:rls
-      - name: Build
+      - name: "Build (production): committed .env.production — public URL + publishable key only"
         run: npm run build
         env:
-          # قيم عامة فقط (Project URL + Publishable/anon key) من: Settings → Secrets and variables → Actions → Variables.
-          # فارغة ← يُبنى التطبيق بالوضع التجريبي. لا تضع service_role هنا أبدًا (التطبيق يرفضه على أي حال).
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
           VITE_BASE: ${{ vars.VITE_BASE || '/dabbir/' }}
       - name: Guard — no secret keys in the bundle
         run: |
@@ -80,7 +76,7 @@ jobs:
       - name: Browser E2E against local Supabase
         run: npm run test:e2e:supabase
       - name: Build (demo mode) + demo/GitHub Pages E2E
-        run: npm run build && npm run test:e2e
+        run: npm run build:demo && npm run test:e2e
       - name: Logs on failure
         if: failure()
         run: docker compose -f supabase/local/docker-compose.yml --env-file supabase/local/.env logs --tail 80 auth rest
@@ -91,9 +87,20 @@ jobs:
           path: tests/e2e/screenshots
           retention-days: 3
 
+  live:
+    name: Live checks on the real Supabase project (public key only, no writes)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run test:live
+
   deploy:
     name: Deploy to GitHub Pages
-    needs: [test, supabase]
+    needs: [test, supabase, live]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:

@@ -154,6 +154,15 @@ npm run supabase:stop      # أو supabase:reset لمسح كل شيء
 
 GitHub Actions يشغّل كل ما سبق (بما فيه Supabase داخل الـ runner) على كل push، والنشر من `main` فقط بعد نجاح الكل.
 
+## المشروع الحقيقي: dabbir-production
+
+- العنوان: `https://iokdoysweppfcspfvlde.supabase.co` (المنطقة: ap-southeast-2) — `.env.production` يحتوي الرابط والمفتاح **العام** فقط.
+- ✅ طُبّقت الـ migrations الثلاثة وRLS على كل الجداول (القاعدة كانت فارغة: 0 مستخدمين، لا جداول).
+- ✅ `npm run test:rls:remote`: 22 فحص عزل على القاعدة الحقيقية داخل معاملة تُلغى بالكامل (لا يبقى أي أثر).
+- ✅ `npm run test:live` (يعمل في CI): فحوص حية بالمفتاح العام فقط بدون كتابة بيانات.
+- ⏳ إعدادات المصادقة (رابط الموقع، روابط العودة، 8 أحرف، القوالب العربية) لم تُطبّق: التوكن يفتقد صلاحية `project_admin_write`.
+- ⏳ SMTP مخصص مطلوب قبل استقبال مستخدمين حقيقيين.
+
 ## ربط مشروع Supabase الحقيقي (الخطة المجانية)
 
 `scripts/supabase-provision.mjs` عبر Management API الرسمية — آمن لإعادة التشغيل:

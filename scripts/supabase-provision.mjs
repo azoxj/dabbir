@@ -5,7 +5,8 @@
 //
 // المصادقة: Personal Access Token من Supabase في SUPABASE_ACCESS_TOKEN (لا يُطبع أبدًا، ولا يُحفظ في المستودع).
 // ما يفعله (آمن لإعادة التشغيل):
-//   1) يجد مشروعًا باسم SUPABASE_PROJECT_NAME (افتراضي: dabbir) أو ينشئه على الخطة المجانية.
+//   1) يستخدم المشروع الموجود SUPABASE_PROJECT_REF (لا ينشئ مشروعًا أبدًا في هذه الحالة)،
+//      أو يجد مشروعًا باسم SUPABASE_PROJECT_NAME / ينشئه على الخطة المجانية إذا لم يُحدد REF.
 //   2) يرفض تطبيق migrations إذا وُجدت بيانات في جداول دبّر، إلا مع --i-have-a-backup.
 //   3) يطبّق ملفات supabase/migrations بالترتيب.
 //   4) يضبط المصادقة: تأكيد البريد إلزامي، 8 أحرف، روابط العودة لـ GitHub Pages، قوالب بريد عربية.
@@ -18,6 +19,7 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const API = 'https://api.supabase.com/v1'
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN || 'injected-by-proxy'
 const NAME = process.env.SUPABASE_PROJECT_NAME || 'dabbir'
+const REF = process.env.SUPABASE_PROJECT_REF || ''
 const REGION = process.env.SUPABASE_REGION || 'eu-central-1'
 const SITE = process.env.DABBIR_SITE_URL || 'https://azoxj.github.io/dabbir/'
 const DEV_URLS = ['http://localhost:5173/dabbir/**', 'http://localhost:4180/dabbir/**']
@@ -57,9 +59,15 @@ const authConfig = {
   mailer_templates_recovery_content: readFileSync(`${root}supabase/templates/recovery.html`, 'utf8'),
 }
 
-const projects = await api('GET', '/projects')
-let project = projects.find((p) => p.name === NAME)
-console.log(project ? `• مشروع موجود: ${NAME} (${project.id}, ${project.region}, ${project.status})` : `• لا يوجد مشروع باسم ${NAME} — سيُنشأ (خطة مجانية، ${REGION})`)
+let project
+if (REF) {
+  // مشروع موجود محدد: لا إنشاء إطلاقًا (التوكن قد يكون مقيّدًا بهذا المشروع فقط).
+  project = await api('GET', `/projects/${REF}`)
+} else {
+  project = (await api('GET', '/projects')).find((p) => p.name === NAME)
+}
+console.log(project ? `• مشروع موجود: ${project.name} (${project.id ?? project.ref}, ${project.region}, ${project.status})` : `• لا يوجد مشروع باسم ${NAME} — سيُنشأ (خطة مجانية، ${REGION})`)
+if (project) project.id ??= project.ref
 
 if (mode === 'plan') {
   const migrations = readdirSync(`${root}supabase/migrations`).filter((f) => f.endsWith('.sql')).sort()
@@ -69,6 +77,7 @@ if (mode === 'plan') {
   process.exit(0)
 }
 
+if (!project && REF) throw new Error('المشروع المحدد غير موجود')
 if (!project) {
   const orgs = await api('GET', '/organizations')
   if (!orgs.length) throw new Error('لا توجد منظمة في حساب Supabase')

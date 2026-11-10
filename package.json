@@ -22,7 +22,10 @@
     "build:local": "node scripts/with-local-env.mjs vite build --outDir dist-supabase",
     "test:integration": "vitest run -c vitest.integration.config.ts",
     "test:e2e:supabase": "node tests/e2e/supabase-flow.mjs",
-    "check:env": "node scripts/check-public-env.mjs"
+    "check:env": "node scripts/check-public-env.mjs",
+    "test:rls:remote": "node scripts/supabase-remote-test.mjs",
+    "build:demo": "node scripts/build-demo.mjs",
+    "test:live": "node scripts/live-public-check.mjs"
   },
   "engines": {
     "node": ">=20"
