@@ -56,6 +56,7 @@ export default function SettingsPage() {
         </dl>
         <div className="mt-4 space-y-2">
           <Link to="/budget" className={buttonClasses('secondary', { block: true })}>الدخل والادخار ويوم الراتب</Link>
+          {appConfig.mode === 'supabase' && <Link to="/mfa-settings" className={buttonClasses('secondary', { block: true })}>التحقق بخطوتين — تطبيق المصادقة</Link>}
           {user?.provider !== 'google' && <Link to="/reset-password" className={buttonClasses('secondary', { block: true })}>تغيير كلمة المرور</Link>}
           <Button variant="danger" block loading={busy} onClick={() => void signOut()}>تسجيل الخروج</Button>
         </div>

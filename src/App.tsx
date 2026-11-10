@@ -14,6 +14,8 @@ import LoginPage from '@/pages/auth/LoginPage'
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'))
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'))
+const MfaChallengePage = lazy(() => import('@/pages/auth/MfaChallengePage'))
+const MfaSettingsPage = lazy(() => import('@/pages/auth/MfaSettingsPage'))
 const BudgetPage = lazy(() => import('@/pages/BudgetPage'))
 const CommitmentsPage = lazy(() => import('@/pages/CommitmentsPage'))
 const GoalsPage = lazy(() => import('@/pages/GoalsPage'))
@@ -28,6 +30,8 @@ export function AppRoutes() {
         <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
         <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/mfa-challenge" element={<ProtectedRoute allowMfaChallenge><MfaChallengePage /></ProtectedRoute>} />
+        <Route path="/mfa-settings" element={<ProtectedRoute><MfaSettingsPage /></ProtectedRoute>} />
         <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
           <Route index element={<DashboardPage />} />
           <Route path="budget" element={<BudgetPage />} />
