@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 export default function MfaChallengePage() {
   const { status, service } = useAuth()
   const [factorId, setFactorId] = useState('')
-  const [level, setLevel] = useState<'loading' | 'aal1' | 'aal2' | 'none'>('loading')
+  const [level, setLevel] = useState<'loading' | 'aal1' | 'aal2' | 'none' | 'error'>('loading')
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -27,7 +27,7 @@ export default function MfaChallengePage() {
         const totp = factors.data.totp.find((f) => f.status === 'verified')
         setFactorId(totp?.id ?? '')
         setLevel(totp ? 'aal1' : 'none')
-      }).catch(() => alive && setError('تعذّر تحميل إعدادات التحقق. حاول تحديث الصفحة.'))
+      }).catch(() => { if (alive) { setLevel('error'); setError('تعذّر تحميل إعدادات التحقق. حاول تحديث الصفحة.') } })
     return () => { alive = false }
   }, [status, service])
 
