@@ -23,7 +23,8 @@ export function createSupabaseAuth(): AuthService {
   const sb = getSupabase()
   return {
     mode: 'supabase',
-    supportsGoogle: true,
+    // Google OAuth غير مفعّل في مشروع الإنتاج؛ لا نعرض خيارًا يسبب خطأ provider is not enabled.
+    supportsGoogle: false,
 
     async getCurrentUser() {
       const { data, error } = await sb.auth.getSession()
@@ -60,8 +61,9 @@ export function createSupabaseAuth(): AuthService {
     },
 
     async signInWithGoogle() {
-      const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl('/') } })
-      if (error) throw toAppError(error)
+      throw new AppError('google_not_configured', 'الدخول باستخدام Google غير متاح حاليًا. استخدم البريد الإلكتروني وكلمة المرور.')
+      /* const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl('/') } })
+      if (error) throw toAppError(error) */
     },
 
     async sendPasswordReset(email) {
