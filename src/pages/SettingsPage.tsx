@@ -82,7 +82,8 @@ export default function SettingsPage() {
 
       <section className="rounded-3xl border border-ink-100 bg-white p-5 shadow-sm" aria-label="الأوسمة والتحديات">
         <div className="flex items-center gap-3"><span className="text-3xl" aria-hidden="true">🏆</span><div><h2 className="text-lg font-bold text-ink-900">تحديات دبّر الشهرية</h2><p className="text-sm text-ink-500">تنافس على عادات مالية أفضل، واكسب وسام الفائز</p></div></div>
-        <div className="mt-4 rounded-2xl bg-ink-50 p-4 text-sm text-ink-600">قريبًا: تحديات شهرية عادلة بين المشتركين، مع فائز واحد ووسام دائم في ملفه. لن تُعرض رواتبك أو مصاريفك للآخرين.</div>
+        <p className="mt-3 text-sm text-ink-600">اشترك باسم مستعار في تحديات الشهر، وتابع المشاركين والأوسمة بدون كشف بياناتك المالية.</p>
+        <Link to="/challenges" className="mt-4 block rounded-xl bg-brand-600 px-4 py-3 text-center text-sm font-bold text-white">استكشف التحديات الشهرية</Link>
       </section>
 
       <BackupCard onImported={() => void profile.reload()} />
