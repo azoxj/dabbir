@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { PageHeader } from '@/components/layout/AppLayout'
 import { Alert, Button, Card, CardTitle, PageLoader } from '@/components/ui'
 import { appConfig } from '@/config/env'
@@ -22,7 +22,7 @@ export default function ChallengesPage() {
   const month = currentMonth()
   const supported = appConfig.mode === 'supabase'
   const enrolled = entries.some(e => e.user_id === user?.id)
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!supported) { setLoading(false); return }
     setError(null)
     try {
@@ -37,8 +37,11 @@ export default function ChallengesPage() {
       setResults(b.data ?? [])
     } catch (e) { setError(e instanceof Error ? e.message : 'تعذّر تحميل التحديات') }
     finally { setLoading(false) }
-  }
-  useEffect(() => { void load() }, [month, supported])
+  }, [month, supported])
+  useEffect(() => {
+    const task = window.setTimeout(() => { void load() }, 0)
+    return () => window.clearTimeout(task)
+  }, [load])
   const join = async () => {
     const name = alias.trim()
     if (name.length < 2 || name.length > 24) { setError('الاسم المستعار لازم يكون بين حرفين و24 حرف.'); return }
