@@ -17,6 +17,7 @@ const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'))
 const BudgetPage = lazy(() => import('@/pages/BudgetPage'))
 const CommitmentsPage = lazy(() => import('@/pages/CommitmentsPage'))
 const GoalsPage = lazy(() => import('@/pages/GoalsPage'))
+const ChallengesPage = lazy(() => import('@/pages/ChallengesPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
@@ -34,6 +35,7 @@ export function AppRoutes() {
           <Route path="commitments" element={<CommitmentsPage />} />
           <Route path="goals" element={<GoalsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="challenges" element={<ChallengesPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
