@@ -19,6 +19,8 @@ echo "$R" | grep -q "https://$D/" && ok "http → https ($R)" || wait_ "http →
 WW=$(curl -s -o /dev/null -m 20 -w '%{http_code} %{redirect_url}' "https://www.$D/")
 echo "$WW" | grep -q "https://$D/" && ok "www → $D ($WW)" || wait_ "www → $D: $WW"
 O=$(curl -s -o /dev/null -m 20 -w '%{http_code} %{redirect_url}' "https://azoxj.github.io/dabbir/budget")
-echo "$O" | grep -q "$D" && ok "الرابط القديم يحوّل للدومين ($O)" || wait_ "الرابط القديم: $O (يبقى يعمل حتى ربط الدومين)"
+if echo "$O" | grep -q "$D"; then ok "الرابط القديم يحوّل للدومين ($O)"
+elif curl -s -m 20 "https://azoxj.github.io/dabbir/budget" | grep -q '<div id="root"'; then wait_ "الرابط القديم ما زال يخدم التطبيق مباشرة ($O = 404.html fallback، طبيعي قبل ربط الدومين)"
+else wait_ "الرابط القديم: $O"; fi
 grep -q "class=\"\|<div id=\"root\"" <(curl -s -m 20 "https://$D/budget") && ok "تحديث صفحة داخلية (404.html fallback)" || wait_ "صفحة داخلية لم تُخدم بعد"
 exit 0
