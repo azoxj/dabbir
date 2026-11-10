@@ -23,11 +23,15 @@ revoke all on public.challenge_entries, public.challenge_results from anon;
 revoke all on public.challenge_entries, public.challenge_results from authenticated;
 grant select, insert, delete on public.challenge_entries to authenticated;
 grant select on public.challenge_results to authenticated;
+drop policy if exists challenge_entries_public_alias on public.challenge_entries;
 create policy challenge_entries_public_alias on public.challenge_entries for select to authenticated using (true);
+drop policy if exists challenge_entries_join_own on public.challenge_entries;
 create policy challenge_entries_join_own on public.challenge_entries for insert to authenticated
  with check ((select auth.uid())=user_id and month=date_trunc('month',current_date)::date);
+drop policy if exists challenge_entries_leave_own on public.challenge_entries;
 create policy challenge_entries_leave_own on public.challenge_entries for delete to authenticated
  using ((select auth.uid())=user_id and month=date_trunc('month',current_date)::date);
+drop policy if exists challenge_results_visible on public.challenge_results;
 create policy challenge_results_visible on public.challenge_results for select to authenticated
  using (exists (select 1 from public.challenge_entries e where e.user_id=challenge_results.user_id and e.month=challenge_results.month));
 -- No client writes to scores or awards. Scoring and winner settlement require a separate trusted server job.
