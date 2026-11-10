@@ -42,7 +42,8 @@ export default function MfaChallengePage() {
     const { error: verifyError } = await getSupabase().auth.mfa.challengeAndVerify({ factorId, code })
     setBusy(false)
     if (verifyError) return setError('الرمز غير صحيح أو انتهت صلاحيته.')
-    setLevel('aal2')
+    // Reload to make the protected-route guard re-check the refreshed AAL2 session.
+    window.location.replace('/')
   }
 
   return <main className="mx-auto max-w-md p-6 space-y-4" dir="rtl">
