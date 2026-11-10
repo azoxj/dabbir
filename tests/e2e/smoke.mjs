@@ -128,7 +128,7 @@ try {
   })
 
   await check('direct refresh on every deep link (GitHub Pages 404.html fallback)', async () => {
-    const pages = { budget: 'الميزانية والمصاريف', commitments: 'الالتزامات والمواعيد', goals: 'أهداف الادخار', settings: 'الملف الشخصي والإعدادات', '': 'وش أسوي اليوم؟' }
+    const pages = { budget: 'الميزانية والمصاريف', commitments: 'الالتزامات والمواعيد', goals: 'أهداف الادخار', settings: 'حسابي', '': 'وش أسوي اليوم؟' }
     for (const [path, heading] of Object.entries(pages)) {
       await page.goto(BASE + path)
       await page.getByRole('heading', { name: heading, exact: true }).waitFor({ timeout: 10000 })
@@ -219,7 +219,7 @@ try {
     await ap.goto(BASE + 'login')
     await ap.getByRole('button', { name: 'جرّب التطبيق ببيانات تجريبية' }).click()
     await ap.getByRole('heading', { name: 'وش أسوي اليوم؟' }).waitFor()
-    const headings = { الميزانية: 'الميزانية والمصاريف', الالتزامات: 'الالتزامات والمواعيد', الأهداف: 'أهداف الادخار', حسابي: 'الملف الشخصي والإعدادات', اليوم: 'وش أسوي اليوم؟' }
+    const headings = { الميزانية: 'الميزانية والمصاريف', الالتزامات: 'الالتزامات والمواعيد', الأهداف: 'أهداف الادخار', حسابي: 'حسابي', اليوم: 'وش أسوي اليوم؟' }
     for (const [name, heading] of Object.entries(headings)) {
       const link = ap.getByRole('navigation', { name: 'القائمة الرئيسية' }).getByRole('link', { name, exact: true })
       await link.click()
