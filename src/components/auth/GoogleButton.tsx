@@ -22,7 +22,7 @@ export function GoogleButton({ onError }: { onError: (msg: string) => void }) {
         className="border border-ink-300 !bg-white !text-ink-800 hover:!bg-ink-100 disabled:opacity-60">
         <GoogleIcon /> المتابعة باستخدام Google
       </Button>
-      {!service.supportsGoogle && <p className="mt-1 text-center text-xs text-ink-500">يتطلب ربط Supabase (غير متاح في الوضع التجريبي).</p>}
+      {!service.supportsGoogle && <p className="mt-1 text-center text-xs text-ink-500">الدخول بقوقل متاح عند تشغيل النسخة المتصلة بـ Supabase.</p>}
     </div>
   )
 }
