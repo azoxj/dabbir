@@ -11,6 +11,18 @@ export function DemoBanner() {
   )
 }
 
+/** على الرابط القديم فقط: تنبيه بالانتقال للدومين الجديد وأن بيانات هذا المتصفح لا تنتقل تلقائيًا. */
+export function MovingBanner() {
+  // github.io (و github.io.localhost للاختبار المحلي فقط)
+  if (typeof window === 'undefined' || !/(^|\.)github\.io(\.localhost)?$/.test(window.location.hostname)) return null
+  return (
+    <div role="status" className="bg-info-50 px-4 py-2 text-center text-xs font-semibold text-info-600" data-testid="moving-banner">
+      دبّر ينتقل إلى <b dir="ltr">dabbir.online</b>. بياناتك المحفوظة في هذا المتصفح لا تنتقل تلقائيًا:{' '}
+      <Link to="/settings" className="underline">نزّل نسخة احتياطية</Link> ثم استعدها على الرابط الجديد.
+    </div>
+  )
+}
+
 export function OfflineBanner() {
   const online = useOnlineStatus()
   if (online) return null

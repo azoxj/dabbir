@@ -12,9 +12,16 @@ const TYPES = {
   '.woff2': 'font/woff2', '.woff': 'font/woff', '.json': 'application/json',
 }
 
-export function startPagesServer({ root, base = '/dabbir/', port = 4180 }) {
+export function startPagesServer({ root, base = '/dabbir/', port = 4180, redirect = null }) {
+  const state = { redirect }
   const server = createServer(async (req, res) => {
     const path = decodeURIComponent(new URL(req.url, 'http://x').pathname)
+    // محاكاة GitHub Pages بعد ربط دومين مخصص: الرابط القديم يحوّل 301 إلى الدومين مع الحفاظ على المسار.
+    if (state.redirect) {
+      const rest = path.startsWith(base) ? path.slice(base.length) : path === base.slice(0, -1) ? '' : path.replace(/^\//, '')
+      res.writeHead(301, { Location: `${state.redirect.replace(/\/$/, '')}/${rest}${new URL(req.url, 'http://x').search}` })
+      return res.end()
+    }
     if (path === base.slice(0, -1)) { res.writeHead(301, { Location: base }); return res.end() }
     const send = async (file, status = 200) => {
       const body = await readFile(file) // اقرأ أولًا: إن فشلت القراءة لا تُرسل رؤوس
@@ -38,5 +45,6 @@ export function startPagesServer({ root, base = '/dabbir/', port = 4180 }) {
       res.end('404 File not found (GitHub Pages)')
     }
   })
+  server.setRedirect = (target) => { state.redirect = target }
   return new Promise((resolve) => server.listen(port, () => resolve(server)))
 }

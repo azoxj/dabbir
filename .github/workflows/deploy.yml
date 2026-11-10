@@ -6,7 +6,6 @@ name: CI & Deploy (GitHub Pages)
 
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -41,7 +40,6 @@ jobs:
           # فارغة ← يُبنى التطبيق بالوضع التجريبي. لا تضع service_role هنا أبدًا (التطبيق يرفضه على أي حال).
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
-          VITE_BASE: ${{ vars.VITE_BASE || '/dabbir/' }}
       - name: Guard — no secret keys in the bundle
         run: |
           if grep -rEl "sb_secret_[A-Za-z0-9]{8,}" dist; then echo "::error::secret key found in dist"; exit 1; fi
@@ -57,9 +55,39 @@ jobs:
         with:
           path: dist
 
+  e2e:
+    name: Browser E2E (both addresses + domain move)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:scripts
+      - run: npm run build
+      - name: E2E at the old address (/dabbir/)
+        run: E2E_BASE=/dabbir/ npm run test:e2e
+      - name: E2E at the domain root (/)
+        run: E2E_BASE=/ npm run test:e2e
+      - name: Domain move (old → new, Service Worker, backup/restore)
+        run: npm run test:e2e:migration
+
+  domain-status:
+    name: dabbir.online status (DNS, HTTPS, redirects) — report only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/domain-check.sh dabbir.online | tee -a "$GITHUB_STEP_SUMMARY"
+
   deploy:
     name: Deploy to GitHub Pages
-    needs: test
+    needs: [test, e2e]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:

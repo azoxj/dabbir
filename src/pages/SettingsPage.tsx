@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/AppLayout'
+import { BackupCard } from '@/components/settings/BackupCard'
 import { Alert, Button, buttonClasses, Card, CardTitle, PageLoader, TextField } from '@/components/ui'
 import { appConfig } from '@/config/env'
 import { useAuth } from '@/hooks/useAuth'
@@ -59,6 +60,8 @@ export default function SettingsPage() {
           <Button variant="danger" block loading={busy} onClick={() => void signOut()}>تسجيل الخروج</Button>
         </div>
       </Card>
+
+      <BackupCard onImported={() => void profile.reload()} />
 
       <Card>
         <CardTitle>البيانات والخصوصية</CardTitle>

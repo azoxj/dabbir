@@ -1,0 +1,16 @@
+{
+  "domain": "dabbir.online",
+  "comment": "سجلات GitHub Pages الرسمية للدومين الرئيسي + www (docs.github.com: Managing a custom domain for your GitHub Pages site)",
+  "records": [
+    { "type": "A", "name": "@", "address": "185.199.108.153", "ttl": 3600 },
+    { "type": "A", "name": "@", "address": "185.199.109.153", "ttl": 3600 },
+    { "type": "A", "name": "@", "address": "185.199.110.153", "ttl": 3600 },
+    { "type": "A", "name": "@", "address": "185.199.111.153", "ttl": 3600 },
+    { "type": "AAAA", "name": "@", "address": "2606:50c0:8000::153", "ttl": 3600 },
+    { "type": "AAAA", "name": "@", "address": "2606:50c0:8001::153", "ttl": 3600 },
+    { "type": "AAAA", "name": "@", "address": "2606:50c0:8002::153", "ttl": 3600 },
+    { "type": "AAAA", "name": "@", "address": "2606:50c0:8003::153", "ttl": 3600 },
+    { "type": "CNAME", "name": "www", "cname": "azoxj.github.io", "ttl": 3600 }
+  ],
+  "replaceTypesFor": { "@": ["A", "AAAA", "CNAME", "ALIAS"], "www": ["A", "AAAA", "CNAME", "ALIAS"] }
+}

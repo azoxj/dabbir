@@ -14,7 +14,12 @@
     "test:watch": "vitest",
     "test:rls": "bash supabase/tests/run-rls-tests.sh",
     "test:e2e": "node tests/e2e/smoke.mjs",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "test:e2e:migration": "node tests/e2e/domain-migration.mjs",
+    "test:scripts": "node tests/unit-node/spaceship-dns.test.mjs",
+    "dns:plan": "node scripts/spaceship-dns.mjs plan",
+    "dns:apply": "node scripts/spaceship-dns.mjs apply",
+    "domain:check": "bash scripts/domain-check.sh dabbir.online"
   },
   "engines": {
     "node": ">=20"
@@ -41,6 +46,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
     "jsdom": "^31.0.0",
+    "playwright": "^1.63.0",
     "tailwindcss": "^4.3.5",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.72.2",

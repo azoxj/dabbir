@@ -1,4 +1,5 @@
 import type { User } from '@supabase/supabase-js'
+import { APP_BASE } from '@/config/base'
 import { getSupabase } from '@/services/supabaseClient'
 import { AppError, toAppError } from '@/services/errors'
 import type { AuthEvent, AuthService, AuthUser, SignUpResult } from './types'
@@ -15,7 +16,7 @@ function mapUser(u: User | null | undefined): AuthUser | null {
 }
 
 /** رابط عودة داخل التطبيق مع مراعاة المسار الأساسي (مثل /dabbir/ على GitHub Pages). */
-export const redirectUrl = (path: string, base: string = import.meta.env.BASE_URL) =>
+export const redirectUrl = (path: string, base: string = APP_BASE) =>
   `${window.location.origin}${base.endsWith('/') ? base : `${base}/`}${path.replace(/^\//, '')}`
 
 export function createSupabaseAuth(): AuthService {
