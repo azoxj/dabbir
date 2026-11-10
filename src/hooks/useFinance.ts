@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { monthRange } from '@/lib/dates'
-import type { ExpenseCategory, ISODate, NewExpense, ProfilePatch } from '@/types/domain'
+import type { ExpenseCategory, ExpensePatch, ISODate, NewExpense, ProfilePatch } from '@/types/domain'
 import { useAsync } from './useAsync'
 import { useRepository } from './useRepository'
 
@@ -24,11 +24,15 @@ export function useMonthExpenses(today: ISODate) {
     await repo.addExpense(e)
     await reload()
   }, [repo, reload])
+  const update = useCallback(async (id: string, patch: ExpensePatch) => {
+    await repo.updateExpense(id, patch)
+    await reload()
+  }, [repo, reload])
   const remove = useCallback(async (id: string) => {
     await repo.deleteExpense(id)
     await reload()
   }, [repo, reload])
-  return { ...state, add, remove }
+  return { ...state, add, update, remove }
 }
 
 export function useBudgetLimits() {

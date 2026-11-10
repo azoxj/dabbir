@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { dataError } from '@/services/errors'
-import type { BudgetLimit, Commitment, Expense, Profile, SavingsGoal } from '@/types/domain'
+import { DEFAULT_PREFERENCES, type BudgetLimit, type Commitment, type Expense, type Profile, type SavingsGoal } from '@/types/domain'
 import type { DataRepository } from './types'
 
 /* ---------- تحويل الصفوف (snake_case) ↔ النطاق (camelCase) ---------- */
@@ -11,6 +11,8 @@ const numOrNull = (v: unknown) => (v === null || v === undefined ? null : Number
 export const mapProfile = (r: Row): Profile => ({
   id: String(r.id), displayName: (r.display_name as string) ?? null,
   monthlyIncome: num(r.monthly_income), savingsTarget: num(r.savings_target), payday: num(r.payday) || 27,
+  showHijri: typeof r.show_hijri === 'boolean' ? r.show_hijri : DEFAULT_PREFERENCES.showHijri,
+  alertDays: num(r.alert_days) || DEFAULT_PREFERENCES.alertDays,
 })
 export const mapExpense = (r: Row): Expense => ({
   id: String(r.id), amount: num(r.amount), category: r.category as Expense['category'],
@@ -55,6 +57,8 @@ async function run<T>(p: PromiseLike<{ data: T; error: unknown }>): Promise<NonN
  * لا نمرر user_id من الواجهة: القاعدة تعبّئه بـ default auth.uid() وتتحقق منه سياسات RLS.
  * فلترة .eq('user_id') غير مطلوبة أمنيًا (RLS تفعلها) لكنها تُبقي الاستعلام واضحًا ويستفيد من الفهرس.
  */
+const PAGE = 1000
+
 export function createSupabaseRepository(sb: SupabaseClient, userId: string): DataRepository {
   return {
     async getProfile() {
@@ -66,16 +70,33 @@ export function createSupabaseRepository(sb: SupabaseClient, userId: string): Da
       if (patch.monthlyIncome !== undefined) row.monthly_income = patch.monthlyIncome
       if (patch.savingsTarget !== undefined) row.savings_target = patch.savingsTarget
       if (patch.payday !== undefined) row.payday = patch.payday
+      if (patch.showHijri !== undefined) row.show_hijri = patch.showHijri
+      if (patch.alertDays !== undefined) row.alert_days = patch.alertDays
       return mapProfile(await run(sb.from('profiles').update(row).eq('id', userId).select('*').single()))
     },
 
     async listExpenses({ from, to }) {
-      const rows = await run(sb.from('expenses').select('*').eq('user_id', userId).gte('spent_on', from).lte('spent_on', to)
-        .order('spent_on', { ascending: false }).order('created_at', { ascending: false }).limit(1000))
-      return (rows as Row[]).map(mapExpense)
+      // PostgREST يحد كل طلب بـ 1000 صف افتراضيًا: نجلب على دفعات حتى تكتمل الفترة (مهم للتقارير).
+      const out: Expense[] = []
+      for (let offset = 0; offset < 50_000; offset += PAGE) {
+        const rows = (await run(sb.from('expenses').select('*').eq('user_id', userId).gte('spent_on', from).lte('spent_on', to)
+          .order('spent_on', { ascending: false }).order('created_at', { ascending: false }).order('id')
+          .range(offset, offset + PAGE - 1))) as Row[]
+        out.push(...rows.map(mapExpense))
+        if (rows.length < PAGE) break
+      }
+      return out
     },
     async addExpense(e) {
       return mapExpense(await run(sb.from('expenses').insert({ amount: e.amount, category: e.category, note: e.note, spent_on: e.spentOn }).select('*').single()))
+    },
+    async updateExpense(id, e) {
+      const row: Row = {}
+      if (e.amount !== undefined) row.amount = e.amount
+      if (e.category !== undefined) row.category = e.category
+      if (e.note !== undefined) row.note = e.note
+      if (e.spentOn !== undefined) row.spent_on = e.spentOn
+      return mapExpense(await run(sb.from('expenses').update(row).eq('id', id).select('*').single()))
     },
     async deleteExpense(id) {
       await run(sb.from('expenses').delete().eq('id', id))

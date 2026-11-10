@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Divider, GoogleButton } from '@/components/auth/GoogleButton'
+import { ResendConfirmation } from '@/components/auth/ResendConfirmation'
 import { AuthLayout } from '@/components/layout/AuthLayout'
 import { Alert, Button, TextField } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
@@ -45,6 +46,7 @@ export default function RegisterPage() {
       <AuthLayout title="تحقق من بريدك" subtitle="باقي خطوة وحدة.">
         <Alert tone="success">أرسلنا رابط التفعيل إلى <b dir="ltr">{sentTo}</b>. افتح الرابط لتفعيل حسابك ثم سجّل دخولك.</Alert>
         <p className="mt-3 text-xs text-ink-500">ما وصلتك؟ تأكد من مجلد الرسائل غير المرغوبة. إذا كان البريد مسجلًا مسبقًا لن تصلك رسالة جديدة.</p>
+        <div className="mt-3"><ResendConfirmation email={sentTo} /></div>
         <Link to="/login" className="mt-6 block text-center font-bold text-brand-600">الرجوع لتسجيل الدخول</Link>
       </AuthLayout>
     )

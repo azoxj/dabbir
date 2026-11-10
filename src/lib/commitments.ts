@@ -1,18 +1,18 @@
 import type { Commitment, CommitmentKind, ExpenseCategory, ISODate } from '@/types/domain'
-import { addMonths, daysBetween } from './dates'
+import { addMonths, daysBetween, daysInMonth } from './dates'
 
 export type DueStatus = 'done' | 'overdue' | 'today' | 'soon' | 'upcoming' | 'later'
 
 export const SOON_DAYS = 3
 export const UPCOMING_DAYS = 14
 
-export function dueStatus(c: Pick<Commitment, 'dueDate' | 'done'>, today: ISODate): DueStatus {
+export function dueStatus(c: Pick<Commitment, 'dueDate' | 'done'>, today: ISODate, soonDays: number = SOON_DAYS): DueStatus {
   if (c.done) return 'done'
   const d = daysBetween(today, c.dueDate)
   if (d < 0) return 'overdue'
   if (d === 0) return 'today'
-  if (d <= SOON_DAYS) return 'soon'
-  if (d <= UPCOMING_DAYS) return 'upcoming'
+  if (d <= soonDays) return 'soon'
+  if (d <= Math.max(UPCOMING_DAYS, soonDays)) return 'upcoming'
   return 'later'
 }
 
@@ -49,4 +49,20 @@ export function amountDueUntil(list: Commitment[], until: ISODate): number {
 /** فئة المصروف المقابلة عند تسجيل التزام منجز كمصروف. */
 export function commitmentExpenseCategory(kind: CommitmentKind): ExpenseCategory {
   return kind === 'bill' ? 'bills' : 'other'
+}
+
+/** أقرب تاريخ (اليوم أو بعده) يوافق يومًا معينًا من الشهر، مع مراعاة الأشهر القصيرة. */
+export function nextMonthlyDate(today: ISODate, day: number): ISODate {
+  const [y, m, d] = today.split('-').map(Number) as [number, number, number]
+  const thisMonth = Math.min(day, daysInMonth(y, m))
+  const pad = (n: number) => String(n).padStart(2, '0')
+  if (thisMonth >= d) return `${y}-${pad(m)}-${pad(thisMonth)}`
+  return addMonths(`${y}-${pad(m)}-01`, 1, day)
+}
+
+/** التكاليف الثابتة = الالتزامات الشهرية المتكررة ذات المبلغ (إيجار، قسط، فواتير ثابتة...). */
+export function fixedMonthlyCosts(list: Commitment[]): { items: Commitment[]; total: number } {
+  const items = list.filter((c) => c.recurrence === 'monthly' && c.amount && c.amount > 0)
+    .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))
+  return { items, total: items.reduce((s, c) => s + (c.amount ?? 0), 0) }
 }

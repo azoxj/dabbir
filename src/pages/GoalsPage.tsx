@@ -12,7 +12,7 @@ import type { NewSavingsGoal, SavingsGoal } from '@/types/domain'
 
 export default function GoalsPage() {
   const today = useToday()
-  const { data, loading, error, add, adjust, remove } = useGoals()
+  const { data, loading, error, add, update, adjust, remove } = useGoals()
   const toast = useToast()
 
   if (error && !data) return <Alert tone="error">{error.message}</Alert>
@@ -34,6 +34,7 @@ export default function GoalsPage() {
           {goals.map((g) => (
             <li key={g.id}>
               <GoalCard goal={g} today={today}
+                onUpdate={async (patch) => { await update(g.id, patch); toast.show('تم تعديل الهدف ✓') }}
                 onAdjust={async (delta) => {
                   await adjust(g.id, delta)
                   toast.show(delta > 0 ? `تم إيداع ${formatSAR(delta)} ✓` : `تم سحب ${formatSAR(-delta)}`)
@@ -50,7 +51,11 @@ export default function GoalsPage() {
   )
 }
 
-function GoalCard({ goal, today, onAdjust, onDelete }: { goal: SavingsGoal; today: string; onAdjust: (d: number) => Promise<void>; onDelete: () => void }) {
+function GoalCard({ goal, today, onAdjust, onDelete, onUpdate }: {
+  goal: SavingsGoal; today: string; onAdjust: (d: number) => Promise<void>; onDelete: () => void
+  onUpdate: (p: { name: string; targetAmount: number; targetDate: string | null }) => Promise<void>
+}) {
+  const [editing, setEditing] = useState(false)
   const p = goalProgress(goal, today)
   const [amount, setAmount] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -71,6 +76,14 @@ function GoalCard({ goal, today, onAdjust, onDelete }: { goal: SavingsGoal; toda
     }
   }
 
+  if (editing) {
+    return (
+      <Card aria-label={`تعديل هدف ${goal.name}`}>
+        <GoalForm today={today} initial={goal} submitLabel="حفظ التعديل" onCancel={() => setEditing(false)}
+          onSubmit={async (g) => { await onUpdate({ name: g.name, targetAmount: g.targetAmount, targetDate: g.targetDate }); setEditing(false) }} />
+      </Card>
+    )
+  }
   return (
     <Card aria-label={`هدف ${goal.name}`}>
       <div className="flex items-start justify-between gap-2">
@@ -78,7 +91,10 @@ function GoalCard({ goal, today, onAdjust, onDelete }: { goal: SavingsGoal; toda
           <h3 className="text-lg font-bold">{goal.name} {p.status === 'done' && '🎉'}</h3>
           <p className="text-sm text-ink-600">{formatSAR(goal.currentAmount)} من {formatSAR(goal.targetAmount)}</p>
         </div>
-        <button onClick={onDelete} className="rounded-lg p-2 text-ink-500 hover:bg-danger-50 hover:text-danger-600" aria-label={`حذف هدف ${goal.name}`}><TrashIcon className="size-5" /></button>
+        <div className="flex shrink-0 items-center">
+          <button onClick={() => setEditing(true)} className="rounded-lg px-2 py-2 text-xs font-bold text-brand-600 hover:bg-brand-50" aria-label={`تعديل هدف ${goal.name}`}>تعديل</button>
+          <button onClick={onDelete} className="rounded-lg p-2 text-ink-500 hover:bg-danger-50 hover:text-danger-600" aria-label={`حذف هدف ${goal.name}`}><TrashIcon className="size-5" /></button>
+        </div>
       </div>
       <div className="mt-3"><ProgressBar label={`تقدم هدف ${goal.name}`} value={p.ratio} /></div>
       <p className="mt-2 text-xs text-ink-600">
@@ -98,51 +114,59 @@ function GoalCard({ goal, today, onAdjust, onDelete }: { goal: SavingsGoal; toda
 
 function AddGoalCard({ today, onAdd }: { today: string; onAdd: (g: NewSavingsGoal) => Promise<void> }) {
   const [open, setOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [target, setTarget] = useState('')
+  if (!open) return <Button block onClick={() => setOpen(true)}>+ هدف ادخار جديد</Button>
+  return (
+    <Card aria-labelledby="add-goal-title">
+      <CardTitle><span id="add-goal-title">هدف جديد</span></CardTitle>
+      <GoalForm today={today} submitLabel="حفظ الهدف" onCancel={() => setOpen(false)}
+        onSubmit={async (g) => { await onAdd(g); setOpen(false) }} />
+    </Card>
+  )
+}
+
+/** نموذج مشترك: إضافة هدف (مع المبلغ الحالي) أو تعديل هدف (الاسم والمستهدف والموعد؛ الرصيد يتغير بالإيداع/السحب فقط). */
+function GoalForm({ today, initial, submitLabel, onSubmit, onCancel }: {
+  today: string; initial?: SavingsGoal; submitLabel: string
+  onSubmit: (g: NewSavingsGoal) => Promise<void>; onCancel: () => void
+}) {
+  const [name, setName] = useState(initial?.name ?? '')
+  const [target, setTarget] = useState(initial ? String(initial.targetAmount) : '')
   const [current, setCurrent] = useState('')
-  const [date, setDate] = useState('')
+  const [date, setDate] = useState(initial?.targetDate ?? '')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     const t = parseAmount(target)
-    const c = current.trim() ? parseAmount(current, { allowZero: true }) : 0
+    const c = initial ? initial.currentAmount : current.trim() ? parseAmount(current, { allowZero: true }) : 0
     if (!name.trim()) return setError('اكتب اسم الهدف.')
     if (t === null) return setError('المبلغ المستهدف لازم يكون أكبر من صفر.')
     if (c === null) return setError('المبلغ الحالي غير صحيح.')
-    if (date && date <= today) return setError('موعد الهدف لازم يكون في المستقبل.')
+    if (date && date <= today && date !== initial?.targetDate) return setError('موعد الهدف لازم يكون في المستقبل.')
     setError(null)
     setSaving(true)
     try {
-      await onAdd({ name: name.trim(), targetAmount: t, currentAmount: c, targetDate: date || null })
-      setName(''); setTarget(''); setCurrent(''); setDate('')
-      setOpen(false)
+      await onSubmit({ name: name.trim(), targetAmount: t, currentAmount: c, targetDate: date || null })
     } catch (err) {
       setError((err as Error).message)
-    } finally {
       setSaving(false)
     }
   }
 
-  if (!open) return <Button block onClick={() => setOpen(true)}>+ هدف ادخار جديد</Button>
   return (
-    <Card aria-labelledby="add-goal-title">
-      <CardTitle><span id="add-goal-title">هدف جديد</span></CardTitle>
-      <form onSubmit={submit} noValidate className="space-y-3">
-        <TextField label="اسم الهدف" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} placeholder="مثال: صندوق الطوارئ، دفعة سيارة" autoFocus />
-        <div className="grid grid-cols-2 gap-3">
-          <AmountField label="المبلغ المستهدف" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="20000" />
-          <AmountField label="المجمّع حاليًا" value={current} onChange={(e) => setCurrent(e.target.value)} placeholder="0" />
-        </div>
-        <TextField label="الموعد المستهدف (اختياري)" type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} />
-        {error && <Alert tone="error">{error}</Alert>}
-        <div className="flex gap-2">
-          <Button type="submit" className="flex-1" loading={saving}>حفظ الهدف</Button>
-          <Button type="button" variant="ghost" onClick={() => setOpen(false)}>إلغاء</Button>
-        </div>
-      </form>
-    </Card>
+    <form onSubmit={submit} noValidate className="space-y-3">
+      <TextField label="اسم الهدف" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} placeholder="مثال: صندوق الطوارئ، دفعة سيارة" autoFocus />
+      <div className="grid grid-cols-2 gap-3">
+        <AmountField label="المبلغ المستهدف" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="20000" />
+        {!initial && <AmountField label="المجمّع حاليًا" value={current} onChange={(e) => setCurrent(e.target.value)} placeholder="0" />}
+      </div>
+      <TextField label="الموعد المستهدف (اختياري)" type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} />
+      {error && <Alert tone="error">{error}</Alert>}
+      <div className="flex gap-2">
+        <Button type="submit" className="flex-1" loading={saving}>{submitLabel}</Button>
+        <Button type="button" variant="ghost" onClick={onCancel}>إلغاء</Button>
+      </div>
+    </form>
   )
 }

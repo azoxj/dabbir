@@ -18,6 +18,7 @@ const BudgetPage = lazy(() => import('@/pages/BudgetPage'))
 const CommitmentsPage = lazy(() => import('@/pages/CommitmentsPage'))
 const GoalsPage = lazy(() => import('@/pages/GoalsPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
+const ReportsPage = lazy(() => import('@/pages/ReportsPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 export function AppRoutes() {
@@ -34,6 +35,7 @@ export function AppRoutes() {
           <Route path="commitments" element={<CommitmentsPage />} />
           <Route path="goals" element={<GoalsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

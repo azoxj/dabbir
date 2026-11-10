@@ -23,8 +23,7 @@ export function createSupabaseAuth(): AuthService {
   const sb = getSupabase()
   return {
     mode: 'supabase',
-    // Google OAuth غير مفعّل في مشروع الإنتاج؛ لا نعرض خيارًا يسبب خطأ provider is not enabled.
-    supportsGoogle: false,
+    supportsGoogle: true,
 
     async getCurrentUser() {
       const { data, error } = await sb.auth.getSession()
@@ -61,8 +60,8 @@ export function createSupabaseAuth(): AuthService {
     },
 
     async signInWithGoogle() {
-      throw new AppError('google_not_configured', 'الدخول باستخدام Google غير متاح حاليًا. استخدم البريد الإلكتروني وكلمة المرور.')
-
+      const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl('/') } })
+      if (error) throw toAppError(error)
     },
 
     async sendPasswordReset(email) {
@@ -75,8 +74,13 @@ export function createSupabaseAuth(): AuthService {
       if (error) throw toAppError(error)
     },
 
-    async signOut() {
-      const { error } = await sb.auth.signOut()
+    async resendConfirmation(email) {
+      const { error } = await sb.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: redirectUrl('/') } })
+      if (error) throw toAppError(error)
+    },
+
+    async signOut(opts) {
+      const { error } = await sb.auth.signOut({ scope: opts?.everywhere ? 'global' : 'local' })
       if (error && error.name !== 'AuthSessionMissingError') throw new AppError('signout', 'تعذّر تسجيل الخروج. حاول مرة ثانية.')
     },
   }

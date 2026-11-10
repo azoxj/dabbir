@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Commitment, Expense, Profile, SavingsGoal } from '@/types/domain'
 import { buildTodayPlan, effectivePayday, MAX_PLAN_ITEMS } from './todayPlan'
 
-const profile = (p: Partial<Profile> = {}): Profile => ({ id: 'u', displayName: null, monthlyIncome: 10000, savingsTarget: 1000, payday: 27, ...p })
+const profile = (p: Partial<Profile> = {}): Profile => ({ id: 'u', displayName: null, monthlyIncome: 10000, savingsTarget: 1000, payday: 27, showHijri: true, alertDays: 3, ...p })
 const exp = (amount: number, spentOn: string, category: Expense['category'] = 'food'): Expense => ({ id: crypto.randomUUID(), amount, category, note: null, spentOn, createdAt: '' })
 const com = (p: Partial<Commitment>): Commitment => ({ id: crypto.randomUUID(), title: 'التزام', kind: 'bill', dueDate: '2026-11-10', dueTime: null, amount: null, recurrence: 'none', done: false, notes: null, ...p })
 const today = '2026-11-10'
@@ -59,6 +59,14 @@ describe('buildTodayPlan', () => {
     const over = buildTodayPlan({ ...base, profile: profile({ monthlyIncome: 3000, savingsTarget: 0 }), expenses: [exp(1000, today)],
       commitments: [com({ dueDate: '2026-11-27', amount: 2500 })] })
     expect(over.items.some((i) => i.id === 'b-commitments' && i.severity === 'critical')).toBe(true)
+  })
+
+  it('alert window follows the user preference (alertDays)', () => {
+    const c5 = com({ title: 'بعد 5', dueDate: '2026-11-15' })
+    const narrow = buildTodayPlan({ ...base, profile: profile({ alertDays: 3 }), expenses: [exp(1, today)], commitments: [c5] })
+    expect(narrow.items.some((i) => i.title === 'قريب: بعد 5')).toBe(false)
+    const wide = buildTodayPlan({ ...base, profile: profile({ alertDays: 7 }), expenses: [exp(1, today)], commitments: [c5] })
+    expect(wide.items.some((i) => i.title === 'قريب: بعد 5')).toBe(true)
   })
 
   it('caps the number of items', () => {

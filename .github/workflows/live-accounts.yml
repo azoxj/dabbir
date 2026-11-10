@@ -1,0 +1,42 @@
+# اختبار حي على مشروع Supabase الحقيقي بحسابين مؤقتين.
+# يُشغَّل فقط عند push لفرع live-test/** (لا يعمل تلقائيًا مع التطوير العادي).
+# - كلمات المرور تُولَّد وتبقى داخل هذا الـ job فقط (لا تُطبع ولا تُمرَّر).
+# - تُنشر bcrypt hashes فقط إلى فرع مؤقت <الفرع>-hashes، ومنها يُنشأ الحسابان في القاعدة عبر Management API
+#   (لا يوجد أي مفتاح إدارة في GitHub). ثم يُحذف الحسابان والفرع المؤقت بعد الاختبار.
+name: Live account tests (real Supabase)
+
+on:
+  push:
+    branches: ['live-test/**']
+
+permissions:
+  contents: write   # لنشر ملف الـ hashes فقط إلى الفرع المؤقت
+
+jobs:
+  live:
+    if: ${{ !endsWith(github.ref_name, '-hashes') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Generate test accounts (passwords stay in this runner)
+        run: LIVE_SECRETS_FILE="$RUNNER_TEMP/live.env" LIVE_HASHES_FILE="$RUNNER_TEMP/live-users.json" node scripts/live-users.mjs
+      - name: Publish bcrypt hashes only to a temporary branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "${GITHUB_REF_NAME}-hashes"
+          cp "$RUNNER_TEMP/live-users.json" live-users.json
+          git add live-users.json
+          git commit -m "live test: bcrypt hashes only (temporary)"
+          git push origin "${GITHUB_REF_NAME}-hashes"
+      - name: Live tests (waits until the accounts exist)
+        run: |
+          set -a; . "$RUNNER_TEMP/live.env"; set +a
+          npx vitest run -c vitest.live.config.ts
+      - name: Remove secrets file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/live.env"
