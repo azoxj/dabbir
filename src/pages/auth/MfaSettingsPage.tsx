@@ -20,7 +20,17 @@ export default function MfaSettingsPage() {
     setFactors(result.data.totp.filter((factor) => factor.status === 'verified'))
     setLevel(assurance.data.currentLevel ?? 'aal1')
   }
-  useEffect(() => { void refresh().catch(() => setError('تعذّر تحميل وسائل الحماية.')) }, [])
+  useEffect(() => {
+    if (!sb) return
+    let active = true
+    void Promise.all([sb.auth.mfa.listFactors(), sb.auth.mfa.getAuthenticatorAssuranceLevel()]).then(([result, assurance]) => {
+      if (!active) return
+      if (result.error || assurance.error) throw result.error ?? assurance.error
+      setFactors(result.data.totp.filter((factor) => factor.status === 'verified'))
+      setLevel(assurance.data.currentLevel ?? 'aal1')
+    }).catch(() => { if (active) setError('تعذّر تحميل وسائل الحماية.') })
+    return () => { active = false }
+  }, [sb])
 
   async function enroll() {
     if (!sb) return
