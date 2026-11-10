@@ -22,7 +22,10 @@ export interface AuthService {
   signInWithGoogle(): Promise<void>
   sendPasswordReset(email: string): Promise<void>
   updatePassword(newPassword: string): Promise<void>
-  signOut(): Promise<void>
+  /** everywhere: إنهاء الجلسة في كل الأجهزة (إبطال كل رموز التجديد). */
+  signOut(opts?: { everywhere?: boolean }): Promise<void>
+  /** إعادة إرسال رسالة تأكيد البريد (غير متاح في الوضع التجريبي). */
+  resendConfirmation?(email: string): Promise<void>
 }
 
 export const MIN_PASSWORD_LENGTH = 8

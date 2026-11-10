@@ -1,12 +1,11 @@
-# نشر «دبّر» على GitHub Pages: https://azoxj.github.io/dabbir/
-# - كل push/PR: فحص الأنواع + lint + اختبارات الوحدة + اختبارات RLS + البناء.
-# - النشر فقط من main بعد نجاح الفحوصات (أو يدويًا من تبويب Actions).
-# مجاني بالكامل للمستودعات العامة (GitHub Actions + GitHub Pages).
+# دبّر — فحص كامل ثم نشر على GitHub Pages: https://azoxj.github.io/dabbir/
+# - كل push (أي فرع) وكل PR: الفحوصات + اختبارات Supabase حقيقية (محلية داخل الـ runner).
+# - النشر من main فقط، وبعد نجاح كل الوظائف.
+# مجاني بالكامل للمستودعات العامة.
 name: CI & Deploy (GitHub Pages)
 
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -14,12 +13,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: pages-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   test:
-    name: Typecheck, lint, tests, build
+    name: Typecheck, lint, unit + DB tests, build
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -29,6 +28,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Committed env files contain public values only
+        run: npm run check:env
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
@@ -57,9 +58,42 @@ jobs:
         with:
           path: dist
 
+  supabase:
+    name: Supabase integration + browser E2E (iPhone/Android)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Start local Supabase (Postgres + GoTrue + PostgREST + Mailpit)
+        run: npm run supabase:start
+      - name: Integration tests (auth, sessions, CRUD, sync, RLS with two users)
+        run: npm run test:integration
+      - name: Build against local Supabase
+        run: npm run build:local
+      - name: Browser E2E against local Supabase
+        run: npm run test:e2e:supabase
+      - name: Build (demo mode) + demo/GitHub Pages E2E
+        run: npm run build && npm run test:e2e
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f supabase/local/docker-compose.yml --env-file supabase/local/.env logs --tail 80 auth rest
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-screenshots
+          path: tests/e2e/screenshots
+          retention-days: 3
+
   deploy:
     name: Deploy to GitHub Pages
-    needs: test
+    needs: [test, supabase]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:

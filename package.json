@@ -14,7 +14,15 @@
     "test:watch": "vitest",
     "test:rls": "bash supabase/tests/run-rls-tests.sh",
     "test:e2e": "node tests/e2e/smoke.mjs",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "supabase:start": "node scripts/supabase-local.mjs start",
+    "supabase:stop": "node scripts/supabase-local.mjs stop",
+    "supabase:reset": "node scripts/supabase-local.mjs reset",
+    "dev:local": "node scripts/with-local-env.mjs vite",
+    "build:local": "node scripts/with-local-env.mjs vite build --outDir dist-supabase",
+    "test:integration": "vitest run -c vitest.integration.config.ts",
+    "test:e2e:supabase": "node tests/e2e/supabase-flow.mjs",
+    "check:env": "node scripts/check-public-env.mjs"
   },
   "engines": {
     "node": ">=20"
@@ -41,6 +49,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
     "jsdom": "^31.0.0",
+    "playwright": "^1.63.0",
     "tailwindcss": "^4.3.5",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.72.2",

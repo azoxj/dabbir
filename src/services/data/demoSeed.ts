@@ -1,4 +1,5 @@
 import { addDays, monthRange, todayISO } from '@/lib/dates'
+import { DEFAULT_PREFERENCES } from '@/types/domain'
 import type { DemoState } from './demoRepository'
 
 /** بيانات تجريبية واقعية لحساب «الضيف» فقط. الحسابات التجريبية الجديدة تبدأ فارغة. */
@@ -12,7 +13,7 @@ export function buildDemoSeed(userId: string, now: Date = new Date()): DemoState
     return d > today ? today : d
   }
   return {
-    profile: { id: userId, displayName: 'ضيف دبّر', monthlyIncome: 9500, savingsTarget: 1000, payday: 27 },
+    profile: { id: userId, displayName: 'ضيف دبّر', monthlyIncome: 9500, savingsTarget: 1000, payday: 27, ...DEFAULT_PREFERENCES },
     expenses: [
       { id: id(), amount: 2500, category: 'housing', note: 'الإيجار', spentOn: inMonth(0), createdAt: created },
       { id: id(), amount: 420, category: 'food', note: 'مقاضي الأسبوع', spentOn: inMonth(2), createdAt: created },

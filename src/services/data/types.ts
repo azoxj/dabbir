@@ -1,5 +1,5 @@
 import type {
-  BudgetLimit, Commitment, Expense, ExpenseCategory, ISODate, NewCommitment, NewExpense,
+  BudgetLimit, Commitment, Expense, ExpenseCategory, ExpensePatch, ISODate, NewCommitment, NewExpense,
   NewSavingsGoal, Profile, ProfilePatch, SavingsGoal,
 } from '@/types/domain'
 
@@ -10,6 +10,7 @@ export interface DataRepository {
 
   listExpenses(range: { from: ISODate; to: ISODate }): Promise<Expense[]>
   addExpense(input: NewExpense): Promise<Expense>
+  updateExpense(id: string, patch: ExpensePatch): Promise<Expense>
   deleteExpense(id: string): Promise<void>
 
   listBudgetLimits(): Promise<BudgetLimit[]>

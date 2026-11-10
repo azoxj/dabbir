@@ -1,34 +1,25 @@
-import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Divider, GoogleButton } from '@/components/auth/GoogleButton'
+import { ResendConfirmation } from '@/components/auth/ResendConfirmation'
 import { AuthLayout } from '@/components/layout/AuthLayout'
 import { Alert, Button, TextField } from '@/components/ui'
+import { enterDemoMode, getRuntimeMode, realAccountsAvailable } from '@/config/mode'
 import { useAuth } from '@/hooks/useAuth'
 import { validateEmail } from '@/services/auth'
+import { takeAuthRedirectError } from '@/services/auth/redirectError'
 import { toAppError } from '@/services/errors'
 
 export default function LoginPage() {
   const { service } = useAuth()
+  const [params] = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(() => takeAuthRedirectError())
+  const [errorCode, setErrorCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-    const emailErr = validateEmail(email)
-    if (emailErr) return setError(emailErr)
-    if (!password) return setError('اكتب كلمة المرور.')
-    setError(null)
-    setLoading(true)
-    try {
-      await service.signIn(email, password)
-      // التوجيه يتم تلقائيًا عبر PublicOnlyRoute عند تغيّر الحالة.
-    } catch (err) {
-      setError(toAppError(err).message)
-      setLoading(false)
-    }
-  }
+  const autoGuest = useRef(false)
+  const isDemo = getRuntimeMode() === 'demo'
 
   const guest = async () => {
     setLoading(true)
@@ -36,6 +27,33 @@ export default function LoginPage() {
       await service.signInAsGuest?.()
     } catch (err) {
       setError(toAppError(err).message)
+      setLoading(false)
+    }
+  }
+
+  // الدخول من زر «جرّب بدون حساب» في وضع الحسابات الحقيقية يفتح بيانات الضيف مباشرة.
+  useEffect(() => {
+    if (isDemo && params.get('demo') === '1' && service.signInAsGuest && !autoGuest.current) {
+      autoGuest.current = true
+      void service.signInAsGuest()
+    }
+  }, [isDemo, params, service])
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    const emailErr = validateEmail(email)
+    if (emailErr) return setError(emailErr)
+    if (!password) return setError('اكتب كلمة المرور.')
+    setError(null)
+    setErrorCode(null)
+    setLoading(true)
+    try {
+      await service.signIn(email, password)
+      // التوجيه يتم تلقائيًا عبر PublicOnlyRoute عند تغيّر الحالة.
+    } catch (err) {
+      const appErr = toAppError(err)
+      setError(appErr.message)
+      setErrorCode(appErr.code)
       setLoading(false)
     }
   }
@@ -51,13 +69,19 @@ export default function LoginPage() {
           <Link to="/forgot-password" className="font-semibold text-brand-600 hover:underline">نسيت كلمة المرور؟</Link>
         </div>
         {error && <Alert tone="error">{error}</Alert>}
+        {errorCode === 'email_not_confirmed' && <ResendConfirmation email={email} />}
         <Button type="submit" block loading={loading}>دخول</Button>
       </form>
       <Divider />
       <GoogleButton onError={setError} />
-      {service.signInAsGuest && (
+      {isDemo && service.signInAsGuest && (
         <Button type="button" variant="ghost" block className="mt-3" onClick={guest} disabled={loading}>
           جرّب التطبيق ببيانات تجريبية
+        </Button>
+      )}
+      {!isDemo && realAccountsAvailable && (
+        <Button type="button" variant="ghost" block className="mt-3" onClick={enterDemoMode} disabled={loading}>
+          جرّب بدون حساب (وضع تجريبي محلي)
         </Button>
       )}
       <p className="mt-6 text-center text-sm text-ink-600">

@@ -35,7 +35,7 @@ export default function DashboardPage() {
       <header>
         <p className="text-sm text-ink-500">{greeting()}{name ? `، ${name}` : ''} 👋</p>
         <h1 className="mt-1 text-3xl font-bold text-ink-900">وش أسوي اليوم؟</h1>
-        <p className="mt-1 text-xs text-ink-500">{formatWeekday(today)} {formatDate(today)} · {formatHijri(today)}</p>
+        <p className="mt-1 text-xs text-ink-500">{formatWeekday(today)} {formatDate(today)}{data?.profile.showHijri !== false && ` · ${formatHijri(today)}`}</p>
       </header>
 
       {loading && !data && <PageLoader />}
@@ -72,7 +72,7 @@ export default function DashboardPage() {
           </Card>
 
           <Card>
-            <CardTitle action={<Link to="/budget" className="text-sm font-bold text-brand-600">التفاصيل</Link>}>ميزانية هذا الشهر</CardTitle>
+            <CardTitle action={<span className="flex gap-3"><Link to="/reports" className="text-sm font-bold text-brand-600">التقارير</Link><Link to="/budget" className="text-sm font-bold text-brand-600">التفاصيل</Link></span>}>ميزانية هذا الشهر</CardTitle>
             <div className="grid grid-cols-2 gap-2.5">
               <Stat label="تقدر تصرف اليوم" value={formatSAR(plan.summary.dailyAllowance)} tone={plan.summary.dailyAllowance > 0 ? 'brand' : 'danger'} />
               <Stat label="المتبقي بعد الالتزامات" value={formatSAR(plan.summary.availableAfterCommitments)} tone={plan.summary.availableAfterCommitments < 0 ? 'danger' : 'ink'} />
@@ -91,7 +91,7 @@ export default function DashboardPage() {
             <Link to="/budget#add" className={clsx(buttonClasses('secondary', { block: true }), 'mt-4')}>+ سجّل مصروف</Link>
           </Card>
 
-          <UpcomingCard commitments={data.commitments} today={today} />
+          <UpcomingCard commitments={data.commitments} today={today} alertDays={data.profile.alertDays} />
 
           {data.goals.length > 0 && (
             <Card>
@@ -115,7 +115,7 @@ export default function DashboardPage() {
   )
 }
 
-function UpcomingCard({ commitments, today }: { commitments: Commitment[]; today: ISODate }) {
+function UpcomingCard({ commitments, today, alertDays }: { commitments: Commitment[]; today: ISODate; alertDays: number }) {
   const upcoming = sortCommitments(commitments.filter((c) => !c.done)).slice(0, 4)
   return (
     <Card>
@@ -125,7 +125,7 @@ function UpcomingCard({ commitments, today }: { commitments: Commitment[]; today
       ) : (
         <ul className="divide-y divide-ink-100">
           {upcoming.map((c) => {
-            const st = dueStatus(c, today)
+            const st = dueStatus(c, today, alertDays)
             return (
               <li key={c.id} className="flex items-center justify-between gap-2 py-2.5">
                 <span className="min-w-0 truncate font-medium">{c.title}</span>

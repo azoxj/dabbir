@@ -73,8 +73,13 @@ export function createSupabaseAuth(): AuthService {
       if (error) throw toAppError(error)
     },
 
-    async signOut() {
-      const { error } = await sb.auth.signOut()
+    async resendConfirmation(email) {
+      const { error } = await sb.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: redirectUrl('/') } })
+      if (error) throw toAppError(error)
+    },
+
+    async signOut(opts) {
+      const { error } = await sb.auth.signOut({ scope: opts?.everywhere ? 'global' : 'local' })
       if (error && error.name !== 'AuthSessionMissingError') throw new AppError('signout', 'تعذّر تسجيل الخروج. حاول مرة ثانية.')
     },
   }

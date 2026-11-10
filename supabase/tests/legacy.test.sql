@@ -54,6 +54,15 @@ select public.reset_my_data();
 select pg_temp.assert((select count(*) = 0 from public.commitments) and (select count(*) = 0 from public.savings_goals)
   and (select count(*) = 0 from public.budget_limits), 'reset_my_data يمسح بيانات المستخدم');
 select pg_temp.assert((select monthly_income = 0 from public.profiles), 'reset_my_data يصفّر الدخل');
+-- التفضيلات: تعديل مسموح، قيمة خارج النطاق مرفوضة
+update public.profiles set show_hijri = false, alert_days = 7 where true;
+select pg_temp.assert((select not show_hijri and alert_days = 7 from public.profiles), 'تعديل التفضيلات');
+do $$ begin
+  begin update public.profiles set alert_days = 99 where true; raise exception 'ASSERTION FAILED: alert_days=99 مقبول';
+  exception when check_violation then raise notice 'PASS: alert_days خارج النطاق مرفوض'; end;
+end $$;
+select public.reset_my_data();
+select pg_temp.assert((select show_hijri and alert_days = 3 from public.profiles), 'reset_my_data يعيد التفضيلات');
 reset role;
 select pg_temp.assert((select count(*) = 1 from public.expenses where user_id = 'dddddddd-0000-0000-0000-000000000004'), 'reset_my_data لا يمس بيانات مستخدم آخر');
 set role anon;

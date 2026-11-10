@@ -6,3 +6,9 @@ coverage
 .env.*
 !.env.example
 tests/e2e/screenshots
+
+# Supabase محلي: أسرار مولدة عشوائيًا لكل جهاز
+supabase/local/.env
+supabase/local/.gateway.pid
+dist-supabase
+!.env.production

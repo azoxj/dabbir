@@ -25,6 +25,10 @@ export function useCommitments() {
     await reload()
     return patch
   }, [repo, reload])
+  const update = useCallback(async (id: string, patch: Partial<Omit<Commitment, 'id'>>) => {
+    await repo.updateCommitment(id, patch)
+    await reload()
+  }, [repo, reload])
   const reopen = useCallback(async (id: string) => {
     await repo.updateCommitment(id, { done: false })
     await reload()
@@ -33,5 +37,5 @@ export function useCommitments() {
     await repo.deleteCommitment(id)
     await reload()
   }, [repo, reload])
-  return { ...state, add, complete, reopen, remove }
+  return { ...state, add, update, complete, reopen, remove }
 }

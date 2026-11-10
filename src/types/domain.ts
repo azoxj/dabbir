@@ -20,7 +20,14 @@ export interface Profile {
   savingsTarget: number
   /** يوم نزول الراتب (1-31). */
   payday: number
+  /** عرض التاريخ الهجري في الرئيسية. */
+  showHijri: boolean
+  /** كم يومًا قبل الاستحقاق يظهر الالتزام كـ«قريب». */
+  alertDays: number
 }
+
+export const DEFAULT_PREFERENCES = { showHijri: true, alertDays: 3 } as const
+export const ALERT_DAY_OPTIONS = [1, 2, 3, 5, 7, 14] as const
 
 export interface Expense {
   id: string
@@ -57,6 +64,7 @@ export interface SavingsGoal {
 }
 
 export type NewExpense = Omit<Expense, 'id' | 'createdAt'>
+export type ExpensePatch = Partial<NewExpense>
 export type NewCommitment = Omit<Commitment, 'id' | 'done'>
 export type NewSavingsGoal = Omit<SavingsGoal, 'id'>
 export type ProfilePatch = Partial<Omit<Profile, 'id'>>
