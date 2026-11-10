@@ -10,7 +10,7 @@ export function ProtectedRoute({ children, allowMfaChallenge = false }: { childr
   const { status, recovery, signedOutByUser, service, user } = useAuth()
   const [mfa, setMfa] = useState<'checking' | 'required' | 'ok'>('checking')
   useEffect(() => {
-    if (status !== 'signedIn' || service.mode !== 'supabase') { setMfa('ok'); return }
+    if (status !== 'signedIn' || service.mode !== 'supabase') return
     let active = true
     const sb = getSupabase()
     void sb.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data, error }) => {
@@ -25,8 +25,8 @@ export function ProtectedRoute({ children, allowMfaChallenge = false }: { childr
   if (status === 'signedOut') return <Navigate to="/login" replace state={signedOutByUser ? null : { from: location.pathname }} />
   // جلسة الاستعادة تذهب مباشرة لتعيين كلمة المرور.
   if (recovery) return <Navigate to="/reset-password" replace />
-  if (mfa === 'checking') return <PageLoader />
-  if (mfa === 'required' && !allowMfaChallenge) return <Navigate to="/mfa-challenge" replace />
+  if (service.mode === 'supabase' && mfa === 'checking') return <PageLoader />
+  if (service.mode === 'supabase' && mfa === 'required' && !allowMfaChallenge) return <Navigate to="/mfa-challenge" replace />
   return allowMfaChallenge ? <>{children}</> : <RepositoryProvider>{children}</RepositoryProvider>
 }
 
