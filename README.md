@@ -26,7 +26,7 @@
 ```bash
 cd dabbir
 npm install   # Node 20+
-npm run dev          # http://localhost:5173/dabbir/ — يعمل بالوضع التجريبي إذا لم يُضبط Supabase
+npm run dev          # http://localhost:5173/ — يعمل بالوضع التجريبي إذا لم يُضبط Supabase
 ```
 
 | الأمر | الوظيفة |
@@ -67,6 +67,16 @@ npm run dev          # http://localhost:5173/dabbir/ — يعمل بالوضع �
    `https://azoxj.github.io/dabbir/` و `https://azoxj.github.io/dabbir/reset-password`.
 
 اختبار محلي مطابق لسلوك Pages: `npm run build && npm run test:e2e` (خادم `tests/e2e/pages-server.mjs` يخدم `dist` تحت `/dabbir/` ويعيد `404.html` بحالة 404 للمسارات غير الموجودة).
+
+## الدومين dabbir.online
+
+- **نسخة واحدة لعنوانين:** المسار يُحدد وقت التشغيل (`src/config/base.ts`): `/dabbir/` على `azoxj.github.io` والجذر على `dabbir.online`. لذلك يمكن ربط الدومين في أي وقت **بدون توقف**.
+- `public/CNAME` = `dabbir.online` (توثيق؛ في نشر GitHub Actions يُضبط الدومين من إعدادات Pages).
+- سجلات DNS المطلوبة: `ops/dns-dabbir.online.json` (4×A + 4×AAAA للجذر، و `www` CNAME → `azoxj.github.io`).
+  `npm run dns:plan` / `npm run dns:apply` عبر Spaceship API (يحتاج مفتاح Spaceship بصلاحيات `dnsrecords:read` و `dnsrecords:write`). لا يمس سجلات البريد.
+- `npm run domain:check` (يعمل في CI): DNS، الشهادة، http→https، www→الجذر، تحويل الرابط القديم.
+- **بيانات الوضع التجريبي لا تنتقل تلقائيًا** بين `azoxj.github.io` و `dabbir.online` (عنوانان مختلفان في المتصفح). الحل: «حسابي ← النسخة الاحتياطية»: تنزيل من الرابط القديم ثم استعادة على الجديد. يظهر تنبيه بذلك على الرابط القديم.
+- اختبار الانتقال الكامل في متصفح حقيقي: `npm run build && npm run test:e2e:migration`.
 
 ## هيكل المشروع
 

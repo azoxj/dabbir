@@ -1,3 +1,5 @@
+import { APP_BASE } from '@/config/base'
+
 /** تسجيل Service Worker وإبلاغ الواجهة عند توفر إصدار جديد (بدون تحديث مفاجئ أثناء الاستخدام). */
 type Listener = (reg: ServiceWorkerRegistration) => void
 const listeners = new Set<Listener>()
@@ -20,7 +22,7 @@ export function registerServiceWorker(): void {
     try {
       // في أول تثبيت لا يوجد controller؛ clients.claim() يطلق controllerchange ولا نريد إعادة تحميل وقتها.
       const hadController = !!navigator.serviceWorker.controller
-      const base = import.meta.env.BASE_URL
+      const base = APP_BASE
       const reg = await navigator.serviceWorker.register(`${base}sw.js`, { scope: base })
       if (reg.waiting && navigator.serviceWorker.controller) notify(reg)
       reg.addEventListener('updatefound', () => {

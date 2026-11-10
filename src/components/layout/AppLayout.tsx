@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
-import { DemoBanner, OfflineBanner } from './StatusBanners'
+import { DemoBanner, MovingBanner, OfflineBanner } from './StatusBanners'
 
 export function AppLayout() {
   return (
@@ -8,6 +8,7 @@ export function AppLayout() {
       <div className="sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
         <OfflineBanner />
         <DemoBanner />
+        <MovingBanner />
       </div>
       <main className="mx-auto w-full max-w-2xl px-4 pt-4 sm:px-6">
         <Outlet />

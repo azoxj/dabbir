@@ -21,8 +21,10 @@ const TOKEN = process.env.SUPABASE_ACCESS_TOKEN || 'injected-by-proxy'
 const NAME = process.env.SUPABASE_PROJECT_NAME || 'dabbir'
 const REF = process.env.SUPABASE_PROJECT_REF || ''
 const REGION = process.env.SUPABASE_REGION || 'eu-central-1'
-const SITE = process.env.DABBIR_SITE_URL || 'https://azoxj.github.io/dabbir/'
-const DEV_URLS = ['http://localhost:5173/dabbir/**', 'http://localhost:4180/dabbir/**']
+const SITE = process.env.DABBIR_SITE_URL || 'https://dabbir.online/'
+// الرابط القديم يبقى مسموحًا أثناء فترة الانتقال (روابط بريد أُرسلت قبل ربط الدومين).
+const LEGACY_URLS = ['https://azoxj.github.io/dabbir/**', 'https://www.dabbir.online/**']
+const DEV_URLS = ['http://localhost:5173/**', 'http://localhost:4180/**']
 const TABLES = ['expenses', 'budget_limits', 'commitments', 'savings_goals']
 
 const mode = process.argv[2]
@@ -44,7 +46,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const authConfig = {
   site_url: SITE,
-  uri_allow_list: [SITE + '**', ...DEV_URLS].join(','),
+  uri_allow_list: [SITE + '**', ...LEGACY_URLS, ...DEV_URLS].join(','),
   disable_signup: false,
   external_email_enabled: true,
   mailer_autoconfirm: false,

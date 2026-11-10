@@ -25,7 +25,12 @@
     "check:env": "node scripts/check-public-env.mjs",
     "test:rls:remote": "node scripts/supabase-remote-test.mjs",
     "build:demo": "node scripts/build-demo.mjs",
-    "test:live": "node scripts/live-public-check.mjs"
+    "test:live": "node scripts/live-public-check.mjs",
+    "test:e2e:migration": "node tests/e2e/domain-migration.mjs",
+    "test:scripts": "node tests/unit-node/spaceship-dns.test.mjs",
+    "dns:plan": "node scripts/spaceship-dns.mjs plan",
+    "dns:apply": "node scripts/spaceship-dns.mjs apply",
+    "domain:check": "bash scripts/domain-check.sh dabbir.online"
   },
   "engines": {
     "node": ">=20"

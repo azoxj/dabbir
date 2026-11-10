@@ -5,6 +5,7 @@
  * عند توفر Supabase يمكن للزائر الدخول للوضع التجريبي صراحةً، ويبقى منفصلًا تمامًا:
  * مفاتيح تخزين مختلفة (dabbir.demo.*)، ومستودع بيانات مختلف، ولا يُنشأ عميل Supabase أصلًا.
  */
+import { appUrl } from './base'
 import { appConfig, type DataMode } from './env'
 
 const DEMO_FLAG = 'dabbir.demo.active'
@@ -28,10 +29,10 @@ export const realAccountsAvailable = appConfig.mode === 'supabase'
 /** الدخول للوضع التجريبي (إعادة تحميل كاملة حتى لا تختلط حالة الحسابين في الذاكرة). */
 export function enterDemoMode(): void {
   try { window.localStorage.setItem(DEMO_FLAG, '1') } catch { /* تخزين غير متاح */ }
-  window.location.assign(`${import.meta.env.BASE_URL}login?demo=1`)
+  window.location.assign(appUrl('login?demo=1'))
 }
 
 export function exitDemoMode(): void {
   try { window.localStorage.removeItem(DEMO_FLAG) } catch { /* تخزين غير متاح */ }
-  window.location.assign(`${import.meta.env.BASE_URL}login`)
+  window.location.assign(appUrl('login'))
 }

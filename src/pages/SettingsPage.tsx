@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/AppLayout'
+import { BackupCard } from '@/components/settings/BackupCard'
 import { Alert, Button, buttonClasses, Card, CardTitle, PageLoader, SelectField, TextField } from '@/components/ui'
 import { ALERT_DAY_OPTIONS, type Profile } from '@/types/domain'
 import { appConfig } from '@/config/env'
@@ -73,6 +74,8 @@ export default function SettingsPage() {
       {profile.data && (
         <PreferencesCard profile={profile.data} onSave={async (patch) => { await profile.update(patch); toast.show('تم حفظ التفضيلات ✓') }} />
       )}
+
+      <BackupCard onImported={() => void profile.reload()} />
 
       <Card>
         <CardTitle>البيانات والخصوصية</CardTitle>

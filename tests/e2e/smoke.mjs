@@ -52,8 +52,8 @@ try {
     await page.screenshot({ path: `${shots}/01-login.png` })
   })
 
-  await check('/dabbir (no trailing slash) works', async () => {
-    const r = await page.goto(ORIGIN + BASE_PATH.slice(0, -1))
+  await check('base path without trailing slash works', async () => {
+    const r = await page.goto(ORIGIN + (BASE_PATH.slice(0, -1) || '/'))
     assert(r.ok(), `status ${r.status()}`)
     await page.getByRole('heading', { name: 'تسجيل الدخول' }).waitFor()
   })
@@ -161,8 +161,8 @@ try {
 
   await check('manifest: valid, icons resolve relative to manifest URL', async () => {
     const href = await page.locator('link[rel=manifest]').getAttribute('href')
-    assert(href === `${BASE_PATH}manifest.webmanifest`, `manifest href ${href}`)
-    const murl = new URL(href, ORIGIN)
+    const murl = new URL(href, page.url())
+    assert(murl.pathname === `${BASE_PATH}manifest.webmanifest`, `manifest resolves to ${murl.pathname}`)
     const m = await (await fetch(murl)).json()
     assert(m.dir === 'rtl' && m.lang === 'ar' && m.display === 'standalone', 'manifest dir/lang/display')
     assert(new URL(m.start_url, murl).pathname === BASE_PATH && new URL(m.scope, murl).pathname === BASE_PATH, 'start_url/scope')
@@ -172,7 +172,7 @@ try {
     }
     assert(m.icons.some((i) => i.purpose === 'maskable'), 'maskable icon')
     const apple = await page.locator('link[rel=apple-touch-icon]').getAttribute('href')
-    assert((await fetch(new URL(apple, ORIGIN))).ok, 'apple-touch-icon')
+    assert((await fetch(new URL(apple, page.url()))).ok, 'apple-touch-icon')
   })
 
   await check('service worker: scope /dabbir/, offline reload of deep link', async () => {

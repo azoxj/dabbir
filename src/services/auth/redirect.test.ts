@@ -11,7 +11,7 @@ describe('auth redirect URLs respect the deploy base path', () => {
   it('root base (custom domain)', () => {
     expect(redirectUrl('/reset-password', '/')).toBe(`${window.location.origin}/reset-password`)
   })
-  it('defaults to the build base URL', () => {
-    expect(redirectUrl('/x')).toBe(`${window.location.origin}${import.meta.env.BASE_URL}x`)
+  it('defaults to the runtime base (root in tests)', () => {
+    expect(redirectUrl('/x')).toBe(`${window.location.origin}/x`)
   })
 })

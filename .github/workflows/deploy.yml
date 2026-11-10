@@ -37,8 +37,6 @@ jobs:
         run: npm run test:rls
       - name: "Build (production): committed .env.production — public URL + publishable key only"
         run: npm run build
-        env:
-          VITE_BASE: ${{ vars.VITE_BASE || '/dabbir/' }}
       - name: Guard — no secret keys in the bundle
         run: |
           if grep -rEl "sb_secret_[A-Za-z0-9]{8,}" dist; then echo "::error::secret key found in dist"; exit 1; fi
@@ -75,8 +73,16 @@ jobs:
         run: npm run build:local
       - name: Browser E2E against local Supabase
         run: npm run test:e2e:supabase
-      - name: Build (demo mode) + demo/GitHub Pages E2E
-        run: npm run build:demo && npm run test:e2e
+      - name: Spaceship DNS script (mock API)
+        run: npm run test:scripts
+      - name: Build (demo mode) — same files for both addresses
+        run: npm run build:demo
+      - name: E2E at the old address (/dabbir/)
+        run: E2E_BASE=/dabbir/ npm run test:e2e
+      - name: E2E at the domain root (/)
+        run: E2E_BASE=/ npm run test:e2e
+      - name: Domain move (old → new, Service Worker, backup/restore)
+        run: npm run test:e2e:migration
       - name: Logs on failure
         if: failure()
         run: docker compose -f supabase/local/docker-compose.yml --env-file supabase/local/.env logs --tail 80 auth rest
@@ -97,6 +103,15 @@ jobs:
         with:
           node-version: 22
       - run: npm run test:live
+
+  domain-status:
+    name: dabbir.online status (DNS, HTTPS, redirects) — report only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/domain-check.sh dabbir.online | tee -a "$GITHUB_STEP_SUMMARY"
 
   deploy:
     name: Deploy to GitHub Pages
