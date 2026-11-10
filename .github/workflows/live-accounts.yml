@@ -1,0 +1,50 @@
+# اختبار حي على مشروع Supabase الحقيقي بحسابين مؤقتين.
+# يُشغَّل فقط عند push لفرع live-test/** (لا يعمل تلقائيًا مع التطوير العادي).
+# 1) prepare: يولّد حسابين عشوائيين ويطبع bcrypt hash فقط (كلمات المرور مخفية).
+# 2) يُنشأ الحسابان في القاعدة خارجيًا عبر Management API (لا يوجد مفتاح إدارة في GitHub).
+# 3) test: ينتظر حتى يعمل الدخول ثم يختبر، وينظّف البيانات. الحسابان يُحذفان بعدها.
+name: Live account tests (real Supabase)
+
+on:
+  push:
+    branches: ['live-test/**']
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      a_email: ${{ steps.gen.outputs.a_email }}
+      a_id: ${{ steps.gen.outputs.a_id }}
+      a_password: ${{ steps.gen.outputs.a_password }}
+      b_email: ${{ steps.gen.outputs.b_email }}
+      b_id: ${{ steps.gen.outputs.b_id }}
+      b_password: ${{ steps.gen.outputs.b_password }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - id: gen
+        run: node scripts/live-users.mjs
+
+  test:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx vitest run -c vitest.live.config.ts
+        env:
+          LIVE_A_EMAIL: ${{ needs.prepare.outputs.a_email }}
+          LIVE_A_ID: ${{ needs.prepare.outputs.a_id }}
+          LIVE_A_PASSWORD: ${{ needs.prepare.outputs.a_password }}
+          LIVE_B_EMAIL: ${{ needs.prepare.outputs.b_email }}
+          LIVE_B_ID: ${{ needs.prepare.outputs.b_id }}
+          LIVE_B_PASSWORD: ${{ needs.prepare.outputs.b_password }}
