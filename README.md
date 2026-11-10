@@ -26,7 +26,7 @@
 ```bash
 cd dabbir
 npm install   # Node 20+
-npm run dev          # http://localhost:5173 — يعمل بالوضع التجريبي إذا لم يُضبط Supabase
+npm run dev          # http://localhost:5173/dabbir/ — يعمل بالوضع التجريبي إذا لم يُضبط Supabase
 ```
 
 | الأمر | الوظيفة |
@@ -35,7 +35,7 @@ npm run dev          # http://localhost:5173 — يعمل بالوضع التج�
 | `npm run lint` | ESLint + قواعد React Hooks/Compiler |
 | `npm test` | اختبارات الوحدة والتكامل (Vitest + Testing Library) |
 | `npm run build` | بناء الإنتاج + حقن قائمة الكاش في `sw.js` + CSP |
-| `npm run test:e2e` | اختبار دخان بمتصفح Chromium حقيقي بحجم iPhone على نسخة البناء (يتطلب `npm run build` أولًا) |
+| `npm run test:e2e` | اختبار دخان بمتصفح Chromium حقيقي (iPhone 13 + Pixel 7) على نسخة البناء عبر خادم يحاكي GitHub Pages تحت `/dabbir/` (يتطلب `npm run build` أولًا) |
 | `npm run test:rls` | اختبارات عزل البيانات (RLS) على عنقود PostgreSQL مؤقت محلي |
 | `npm run icons` | إعادة توليد أيقونات PWA من `scripts/icon.svg` |
 
@@ -45,6 +45,29 @@ npm run dev          # http://localhost:5173 — يعمل بالوضع التج�
 - زر «جرّب التطبيق ببيانات تجريبية» يفتح حساب ضيف ببيانات واقعية.
 - Google معطّل مع توضيح. شريط أصفر دائم ينبّه أن البيانات في هذا المتصفح فقط.
 - **ليس آمنًا كبديل للإنتاج** — للتجربة والتطوير فقط.
+
+## النشر على GitHub Pages (مجاني)
+
+الرابط المستهدف: **https://azoxj.github.io/dabbir/** — المسار الأساسي `/dabbir/` مضبوط افتراضيًا (`VITE_BASE`).
+
+ما تم تجهيزه:
+- `vite.config.ts`: `base: '/dabbir/'`؛ كل الملفات والخطوط والأيقونات تُخدم تحت `/dabbir/`.
+- `BrowserRouter basename` ← الروابط والتنقل تعمل تحت المسار الفرعي.
+- `404.html` نسخة من `index.html` تُولَّد أثناء البناء ← **تحديث الصفحة أو فتح رابط مباشر** (مثل `/dabbir/budget`) يعمل. (GitHub Pages يعيدها بحالة 404 لكن المتصفح يعرض التطبيق طبيعيًا.)
+- `.nojekyll` ← لا يتجاهل Pages أي ملف.
+- الـ manifest بمسارات نسبية، والـ Service Worker يُسجَّل بنطاق `/dabbir/` ويحسب مساراته منه.
+- `.github/workflows/deploy.yml`: فحص الأنواع + lint + الاختبارات + اختبارات RLS + البناء + حارس يمنع وجود مفتاح `service_role`/`sb_secret_` في الحزمة، ثم النشر من فرع `main` فقط.
+
+خطوات التفعيل (مرة واحدة):
+1. إنشاء مستودع `azoxj/dabbir` (**عام** — GitHub Pages مجاني للمستودعات العامة في الخطة المجانية).
+2. Push لفرع `main`.
+3. Settings → Pages → Source: **GitHub Actions**.
+4. (اختياري، عند ربط Supabase) Settings → Secrets and variables → Actions → **Variables** (وليس Secrets — القيم عامة بطبيعتها):
+   `VITE_SUPABASE_URL` و `VITE_SUPABASE_ANON_KEY` (Publishable/anon فقط). بدونها يُنشر بالوضع التجريبي.
+5. في Supabase → Authentication → URL Configuration: Site URL = `https://azoxj.github.io/dabbir/`، وRedirect URLs:
+   `https://azoxj.github.io/dabbir/` و `https://azoxj.github.io/dabbir/reset-password`.
+
+اختبار محلي مطابق لسلوك Pages: `npm run build && npm run test:e2e` (خادم `tests/e2e/pages-server.mjs` يخدم `dist` تحت `/dabbir/` ويعيد `404.html` بحالة 404 للمسارات غير الموجودة).
 
 ## هيكل المشروع
 
@@ -126,7 +149,7 @@ dabbir/
    `http://localhost:5173/**` و `<رابط النشر>/` و `<رابط النشر>/reset-password`.
 7. (موصى به) SMTP مخصص لإرسال البريد؛ مزود Supabase الافتراضي محدود جدًا ولا يصلح للإنتاج.
 8. شغّل `npm run dev` وجرّب يدويًا: تسجيل → تأكيد بريد → دخول → Google → استعادة كلمة المرور → عزل حسابين.
-9. عند النشر: الاستضافة يجب أن تعيد `index.html` لكل المسارات (SPA fallback) وتخدم `sw.js` بدون كاش طويل (`Cache-Control: no-cache`).
+9. عند النشر على GitHub Pages: انظر قسم «النشر على GitHub Pages» (الـ SPA fallback عبر `404.html` جاهز).
 
 ## المخاطر والملاحظات
 
@@ -139,4 +162,6 @@ dabbir/
 - **حجم الحزمة**: `@supabase/supabase-js` يُحمَّل حتى في الوضع التجريبي (~60KB gzip). يمكن تحميله ديناميكيًا لاحقًا.
 - **الشهر المالي** = الشهر الميلادي. يوم الراتب يُستخدم للتذكير فقط؛ دورة «من راتب لراتب» مرحلة لاحقة.
 - لا يوجد بعد: حذف الحساب ذاتيًا، تصدير البيانات، سياسة خصوصية/شروط، إشعارات Push، تعديل المصروف بعد إدخاله.
-- CSP مضاف كـ `<meta>` في نسخة البناء؛ عند النشر يُفضّل إرساله كـ HTTP header مع `frame-ancestors 'none'`.
+- CSP مضاف كـ `<meta>` في نسخة البناء. GitHub Pages لا يسمح بترويسات HTTP مخصصة، فلا يمكن إضافة `frame-ancestors` (حماية من التضمين في iframe) — تحتاج استضافة تدعم الترويسات (مثل Cloudflare Pages المجانية) إذا كان ذلك مطلوبًا.
+- GitHub Pages يعيد حالة **404** للروابط العميقة (التطبيق يعمل، لكن بعض أدوات الفحص/محركات البحث تعتبرها غير موجودة). لا يؤثر على المستخدمين.
+- المسار الأساسي ثابت وقت البناء: لو تغيّر اسم المستودع أو أضفت نطاقًا خاصًا، اضبط المتغير `VITE_BASE`.

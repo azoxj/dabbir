@@ -14,7 +14,9 @@ function mapUser(u: User | null | undefined): AuthUser | null {
   }
 }
 
-const redirect = (path: string) => `${window.location.origin}${path}`
+/** رابط عودة داخل التطبيق مع مراعاة المسار الأساسي (مثل /dabbir/ على GitHub Pages). */
+export const redirectUrl = (path: string, base: string = import.meta.env.BASE_URL) =>
+  `${window.location.origin}${base.endsWith('/') ? base : `${base}/`}${path.replace(/^\//, '')}`
 
 export function createSupabaseAuth(): AuthService {
   const sb = getSupabase()
@@ -49,7 +51,7 @@ export function createSupabaseAuth(): AuthService {
       const { data, error } = await sb.auth.signUp({
         email: email.trim(),
         password,
-        options: { emailRedirectTo: redirect('/'), data: { full_name: displayName.trim() || undefined } },
+        options: { emailRedirectTo: redirectUrl('/'), data: { full_name: displayName.trim() || undefined } },
       })
       if (error) throw toAppError(error)
       // عند تفعيل «Confirm email» ومع بريد مسجّل مسبقًا تعيد Supabase مستخدمًا بلا identities (حماية من كشف الحسابات).
@@ -57,12 +59,12 @@ export function createSupabaseAuth(): AuthService {
     },
 
     async signInWithGoogle() {
-      const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirect('/') } })
+      const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl('/') } })
       if (error) throw toAppError(error)
     },
 
     async sendPasswordReset(email) {
-      const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: redirect('/reset-password') })
+      const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: redirectUrl('/reset-password') })
       if (error) throw toAppError(error)
     },
 

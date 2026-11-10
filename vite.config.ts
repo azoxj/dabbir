@@ -1,6 +1,6 @@
 /// <reference types="vitest/config" />
 import { createHash } from 'node:crypto'
-import { readdir, readFile, writeFile } from 'node:fs/promises'
+import { copyFile, readdir, readFile, writeFile } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
@@ -13,7 +13,18 @@ async function walk(dir: string): Promise<string[]> {
   return files.flat()
 }
 
-/** بعد البناء: يحقن قائمة الملفات ورقم إصدار (hash) في dist/sw.js. */
+/** المسار الأساسي للنشر. GitHub Pages لمستودع dabbir ← /dabbir/. يمكن تغييره بـ VITE_BASE (مثلًا "/" لنطاق خاص). */
+export function resolveBase(raw: string | undefined): string {
+  const b = (raw ?? '/dabbir/').trim() || '/'
+  return ('/' + b.replace(/^\/+|\/+$/g, '') + '/').replace(/\/+/g, '/')
+}
+
+/**
+ * بعد البناء:
+ * - يحقن قائمة الملفات (مسارات نسبية للـ base) ورقم إصدار في dist/sw.js.
+ * - ينسخ index.html إلى 404.html: GitHub Pages يخدمه لأي مسار غير موجود، فيعمل تحديث الصفحة على /dabbir/budget.
+ * - ينشئ .nojekyll حتى لا يتجاهل GitHub Pages أي ملفات.
+ */
 function dabbirPwa(): Plugin {
   let outDir = 'dist'
   return {
@@ -22,17 +33,19 @@ function dabbirPwa(): Plugin {
     configResolved(c) { outDir = c.build.outDir },
     async closeBundle() {
       const files = (await walk(outDir))
-        .map((f) => '/' + relative(outDir, f).split(sep).join('/'))
-        .filter((f) => f !== '/sw.js' && !f.endsWith('.map') && f !== '/index.html')
+        .map((f) => relative(outDir, f).split(sep).join('/'))
+        .filter((f) => !['sw.js', 'index.html', '404.html', '.nojekyll'].includes(f) && !f.endsWith('.map'))
       // ‎.woff نسخ احتياطية لمتصفحات قديمة جدًا؛ كل المتصفحات المستهدفة تدعم woff2.
-      const precache = ['/', ...files.filter((f) => !f.endsWith('.woff'))].sort()
+      const precache = ['', ...files.filter((f) => !f.endsWith('.woff'))].sort()
       const hash = createHash('sha256')
-      for (const f of precache) if (f !== '/') hash.update(f)
+      for (const f of precache) hash.update(f)
       hash.update(await readFile(join(outDir, 'index.html')))
       const version = hash.digest('hex').slice(0, 12)
       const swPath = join(outDir, 'sw.js')
       const sw = await readFile(swPath, 'utf8')
       await writeFile(swPath, `self.__DABBIR_PRECACHE__ = ${JSON.stringify(precache)};\n` + sw.replace('__DABBIR_SW_VERSION__', version))
+      await copyFile(join(outDir, 'index.html'), join(outDir, '404.html'))
+      await writeFile(join(outDir, '.nojekyll'), '')
     },
   }
 }
@@ -69,6 +82,7 @@ function dabbirCsp(supabaseUrl: string | undefined): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_')
   return {
+    base: resolveBase(env.VITE_BASE),
     plugins: [react(), tailwindcss(), dabbirCsp(env.VITE_SUPABASE_URL), dabbirPwa()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
     build: { sourcemap: false, target: 'es2022' },

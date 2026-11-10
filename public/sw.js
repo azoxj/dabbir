@@ -1,10 +1,13 @@
 /* دبّر — Service Worker
- * - يخزّن واجهة التطبيق (app shell) والملفات المبنية للعمل بدون اتصال.
+ * - يعمل تحت أي مسار أساسي (مثل /dabbir/ على GitHub Pages): كل المسارات نسبية لنطاق التسجيل (scope).
+ * - يخزّن واجهة التطبيق والملفات المبنية للعمل بدون اتصال.
  * - لا يخزّن أي طلب لـ Supabase أو أي نطاق خارجي (بيانات المستخدم لا تُحفظ في الكاش).
- * - قائمة PRECACHE ورقم الإصدار يُحقنان أثناء البناء (vite.config.ts → dabbirPwa).
+ * - قائمة PRECACHE (مسارات نسبية) ورقم الإصدار يُحقنان أثناء البناء (vite.config.ts → dabbirPwa).
  */
 const VERSION = '__DABBIR_SW_VERSION__'
-const PRECACHE = self.__DABBIR_PRECACHE__ || ['/', '/manifest.webmanifest', '/icons/icon-192.png']
+const BASE = new URL(self.registration.scope).pathname // مثال: "/dabbir/"
+const RELATIVE = self.__DABBIR_PRECACHE__ || ['', 'manifest.webmanifest', 'icons/icon-192.png']
+const PRECACHE = RELATIVE.map((p) => BASE + p)
 const CACHE = `dabbir-${VERSION}`
 
 self.addEventListener('install', (event) => {
@@ -28,23 +31,26 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return
   const url = new URL(req.url)
   if (url.origin !== self.location.origin) return // Supabase/Google: الشبكة مباشرة دائمًا
+  if (!url.pathname.startsWith(BASE)) return // خارج نطاق التطبيق
 
-  // التنقل بين الصفحات (SPA): الشبكة أولًا ثم الواجهة المخزنة عند انقطاع الاتصال.
+  // التنقل (SPA): الشبكة أولًا ثم الواجهة المخزنة عند انقطاع الاتصال.
+  // ملاحظة: GitHub Pages يعيد 404.html (نسخة من التطبيق) للمسارات العميقة مع حالة 404 — نعرضها كما هي.
   if (req.mode === 'navigate') {
     event.respondWith((async () => {
       try {
         const res = await fetch(req)
-        if (res.ok) (await caches.open(CACHE)).put('/', res.clone())
+        if (res.ok && url.pathname === BASE) (await caches.open(CACHE)).put(BASE, res.clone())
         return res
       } catch {
-        return (await caches.match('/')) || Response.error()
+        return (await caches.match(BASE)) || Response.error()
       }
     })())
     return
   }
 
-  // ملفات البناء ذات البصمة (/assets/*) والأيقونات: الكاش أولًا.
-  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/icons/')) {
+  // ملفات البناء ذات البصمة (assets/) والأيقونات: الكاش أولًا.
+  const rel = url.pathname.slice(BASE.length)
+  if (rel.startsWith('assets/') || rel.startsWith('icons/')) {
     event.respondWith((async () => {
       const cached = await caches.match(req)
       if (cached) return cached

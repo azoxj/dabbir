@@ -20,7 +20,8 @@ export function registerServiceWorker(): void {
     try {
       // في أول تثبيت لا يوجد controller؛ clients.claim() يطلق controllerchange ولا نريد إعادة تحميل وقتها.
       const hadController = !!navigator.serviceWorker.controller
-      const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      const base = import.meta.env.BASE_URL
+      const reg = await navigator.serviceWorker.register(`${base}sw.js`, { scope: base })
       if (reg.waiting && navigator.serviceWorker.controller) notify(reg)
       reg.addEventListener('updatefound', () => {
         const sw = reg.installing

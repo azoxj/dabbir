@@ -1,0 +1,73 @@
+# نشر «دبّر» على GitHub Pages: https://azoxj.github.io/dabbir/
+# - كل push/PR: فحص الأنواع + lint + اختبارات الوحدة + اختبارات RLS + البناء.
+# - النشر فقط من main بعد نجاح الفحوصات (أو يدويًا من تبويب Actions).
+# مجاني بالكامل للمستودعات العامة (GitHub Actions + GitHub Pages).
+name: CI & Deploy (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Typecheck, lint, tests, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: RLS / database tests (throwaway local PostgreSQL)
+        run: npm run test:rls
+      - name: Build
+        run: npm run build
+        env:
+          # قيم عامة فقط (Project URL + Publishable/anon key) من: Settings → Secrets and variables → Actions → Variables.
+          # فارغة ← يُبنى التطبيق بالوضع التجريبي. لا تضع service_role هنا أبدًا (التطبيق يرفضه على أي حال).
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_BASE: ${{ vars.VITE_BASE || '/dabbir/' }}
+      - name: Guard — no secret keys in the bundle
+        run: |
+          if grep -rEl "sb_secret_[A-Za-z0-9]{8,}" dist; then echo "::error::secret key found in dist"; exit 1; fi
+          for f in $(grep -rlE "eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}" dist || true); do
+            for t in $(grep -oE "eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}" "$f"); do
+              p=$(echo "$t" | cut -d. -f2 | tr '_-' '/+'); while [ $(( ${#p} % 4 )) -ne 0 ]; do p="$p="; done
+              if echo "$p" | base64 -d 2>/dev/null | grep -q '"role":"service_role"'; then echo "::error::service_role key in $f"; exit 1; fi
+            done
+          done
+          echo "no secret keys in dist"
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

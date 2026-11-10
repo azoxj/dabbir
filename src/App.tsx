@@ -44,7 +44,8 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <BrowserRouter>
+        {/* basename: التطبيق يعمل تحت /dabbir/ على GitHub Pages */}
+        <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <AppRoutes />
           <UpdateBanner />
         </BrowserRouter>
