@@ -1,0 +1,79 @@
+import type { User } from '@supabase/supabase-js'
+import { getSupabase } from '@/services/supabaseClient'
+import { AppError, toAppError } from '@/services/errors'
+import type { AuthEvent, AuthService, AuthUser, SignUpResult } from './types'
+
+function mapUser(u: User | null | undefined): AuthUser | null {
+  if (!u) return null
+  const meta = u.user_metadata ?? {}
+  return {
+    id: u.id,
+    email: u.email ?? null,
+    displayName: (meta.full_name as string) || (meta.name as string) || (meta.display_name as string) || null,
+    provider: u.app_metadata?.provider === 'google' ? 'google' : 'email',
+  }
+}
+
+const redirect = (path: string) => `${window.location.origin}${path}`
+
+export function createSupabaseAuth(): AuthService {
+  const sb = getSupabase()
+  return {
+    mode: 'supabase',
+    supportsGoogle: true,
+
+    async getCurrentUser() {
+      const { data, error } = await sb.auth.getSession()
+      if (error) throw toAppError(error)
+      return mapUser(data.session?.user)
+    },
+
+    onAuthChange(cb) {
+      const { data } = sb.auth.onAuthStateChange((event, session) => {
+        const map: Record<string, AuthEvent> = {
+          SIGNED_IN: 'SIGNED_IN', SIGNED_OUT: 'SIGNED_OUT', PASSWORD_RECOVERY: 'PASSWORD_RECOVERY',
+          USER_UPDATED: 'USER_UPDATED', INITIAL_SESSION: 'INITIAL', TOKEN_REFRESHED: 'SIGNED_IN',
+        }
+        // تأجيل الاستدعاء خارج callback الخاص بـ supabase لتجنب deadlock موثّق في المكتبة.
+        setTimeout(() => cb(mapUser(session?.user), map[event] ?? 'SIGNED_IN'), 0)
+      })
+      return () => data.subscription.unsubscribe()
+    },
+
+    async signIn(email, password) {
+      const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password })
+      if (error) throw toAppError(error, 'invalid_credentials')
+    },
+
+    async signUp(email, password, displayName): Promise<SignUpResult> {
+      const { data, error } = await sb.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { emailRedirectTo: redirect('/'), data: { full_name: displayName.trim() || undefined } },
+      })
+      if (error) throw toAppError(error)
+      // عند تفعيل «Confirm email» ومع بريد مسجّل مسبقًا تعيد Supabase مستخدمًا بلا identities (حماية من كشف الحسابات).
+      return { needsEmailConfirmation: !data.session }
+    },
+
+    async signInWithGoogle() {
+      const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirect('/') } })
+      if (error) throw toAppError(error)
+    },
+
+    async sendPasswordReset(email) {
+      const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: redirect('/reset-password') })
+      if (error) throw toAppError(error)
+    },
+
+    async updatePassword(newPassword) {
+      const { error } = await sb.auth.updateUser({ password: newPassword })
+      if (error) throw toAppError(error)
+    },
+
+    async signOut() {
+      const { error } = await sb.auth.signOut()
+      if (error && error.name !== 'AuthSessionMissingError') throw new AppError('signout', 'تعذّر تسجيل الخروج. حاول مرة ثانية.')
+    },
+  }
+}

@@ -1,0 +1,41 @@
+@import '@fontsource/ibm-plex-sans-arabic/arabic-400.css';
+@import '@fontsource/ibm-plex-sans-arabic/arabic-600.css';
+@import '@fontsource/ibm-plex-sans-arabic/arabic-700.css';
+@import '@fontsource/ibm-plex-sans-arabic/latin-400.css';
+@import '@fontsource/ibm-plex-sans-arabic/latin-700.css';
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  --color-ink-900: #0b1f2d;
+  --color-ink-800: #10283a;
+  --color-ink-600: #3d5866;
+  --color-ink-500: #617680;
+  --color-ink-300: #b9c8cd;
+  --color-ink-100: #e6eef0;
+  --color-surface: #f4f7f8;
+  --color-brand-50: #ecf7f4;
+  --color-brand-100: #d3eee7;
+  --color-brand-500: #0b927c;
+  --color-brand-600: #087d71;
+  --color-brand-700: #066a60;
+  --color-warn-50: #fff6e5;
+  --color-warn-600: #a06505;
+  --color-danger-50: #fff0ee;
+  --color-danger-600: #b33d35;
+  --color-info-50: #eef4fb;
+  --color-info-600: #2b5f97;
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-surface font-sans text-ink-800 antialiased;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+  }
+  /* منع تكبير iOS التلقائي عند التركيز على الحقول (يتطلب 16px+). */
+  input, select, textarea { font-size: 16px; }
+  :focus-visible { outline: 3px solid var(--color-brand-500); outline-offset: 2px; }
+  input[type='number']::-webkit-inner-spin-button { display: none; }
+}
