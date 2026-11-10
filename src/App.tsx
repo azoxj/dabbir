@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
+import { ROUTER_BASENAME } from '@/config/base'
 import { UpdateBanner } from '@/components/layout/UpdateBanner'
 import { ProtectedRoute, PublicOnlyRoute } from '@/components/routing/Guards'
 import { PageLoader } from '@/components/ui'
@@ -44,8 +45,8 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        {/* basename: التطبيق يعمل تحت /dabbir/ على GitHub Pages */}
-        <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+        {/* basename يُحدد وقت التشغيل: /dabbir على github.io، والجذر على dabbir.online */}
+        <BrowserRouter basename={ROUTER_BASENAME}>
           <AppRoutes />
           <UpdateBanner />
         </BrowserRouter>

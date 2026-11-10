@@ -13,12 +13,6 @@ async function walk(dir: string): Promise<string[]> {
   return files.flat()
 }
 
-/** المسار الأساسي للنشر. GitHub Pages لمستودع dabbir ← /dabbir/. يمكن تغييره بـ VITE_BASE (مثلًا "/" لنطاق خاص). */
-export function resolveBase(raw: string | undefined): string {
-  const b = (raw ?? '/dabbir/').trim() || '/'
-  return ('/' + b.replace(/^\/+|\/+$/g, '') + '/').replace(/\/+/g, '/')
-}
-
 /**
  * بعد البناء:
  * - يحقن قائمة الملفات (مسارات نسبية للـ base) ورقم إصدار في dist/sw.js.
@@ -34,7 +28,7 @@ function dabbirPwa(): Plugin {
     async closeBundle() {
       const files = (await walk(outDir))
         .map((f) => relative(outDir, f).split(sep).join('/'))
-        .filter((f) => !['sw.js', 'index.html', '404.html', '.nojekyll'].includes(f) && !f.endsWith('.map'))
+        .filter((f) => !['sw.js', 'index.html', '404.html', '.nojekyll', 'CNAME'].includes(f) && !f.endsWith('.map'))
       // ‎.woff نسخ احتياطية لمتصفحات قديمة جدًا؛ كل المتصفحات المستهدفة تدعم woff2.
       const precache = ['', ...files.filter((f) => !f.endsWith('.woff'))].sort()
       const hash = createHash('sha256')
@@ -82,7 +76,9 @@ function dabbirCsp(supabaseUrl: string | undefined): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_')
   return {
-    base: resolveBase(env.VITE_BASE),
+    // مسارات نسبية: نفس الملفات تعمل من https://azoxj.github.io/dabbir/ ومن https://dabbir.online/
+    // (المسار الفعلي يُحدد وقت التشغيل في src/config/base.ts).
+    base: './',
     plugins: [react(), tailwindcss(), dabbirCsp(env.VITE_SUPABASE_URL), dabbirPwa()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
     build: { sourcemap: false, target: 'es2022' },
