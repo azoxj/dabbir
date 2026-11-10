@@ -58,15 +58,4 @@ begin
   return v_count;
 end $$;
 revoke all on function private.settle_monthly_challenge(date) from public, anon, authenticated;
--- Re-run on the 1st-3rd to recover transient failures; idempotent settlement.
-create extension if not exists pg_cron with schema pg_catalog;
-do $$
-begin
-  if not exists (select 1 from cron.job where jobname = 'dabbir-monthly-challenge-settlement') then
-    perform cron.schedule(
-      'dabbir-monthly-challenge-settlement',
-      '10 0 1-3 * *',
-      $job$select private.settle_monthly_challenge((date_trunc('month', now() at time zone 'Asia/Riyadh') - interval '1 month')::date)$job$
-    );
-  end if;
-end $$;
+-- Schedule this function using Supabase Cron in production; local PostgreSQL tests do not install pg_cron.\n
