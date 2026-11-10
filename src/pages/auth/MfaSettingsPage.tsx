@@ -18,7 +18,7 @@ export default function MfaSettingsPage() {
     const [result, assurance] = await Promise.all([sb.auth.mfa.listFactors(), sb.auth.mfa.getAuthenticatorAssuranceLevel()])
     if (result.error || assurance.error) throw result.error ?? assurance.error
     setFactors(result.data.totp.filter((factor) => factor.status === 'verified'))
-    setLevel(assurance.data.currentLevel)
+    setLevel(assurance.data.currentLevel ?? 'aal1')
   }
   useEffect(() => { void refresh().catch(() => setError('تعذّر تحميل وسائل الحماية.')) }, [])
 
