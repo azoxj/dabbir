@@ -11,6 +11,7 @@ import DashboardPage from '@/pages/DashboardPage'
 import LoginPage from '@/pages/auth/LoginPage'
 
 // الصفحات الأقل استخدامًا تُحمَّل عند الحاجة لتصغير الحزمة الأولى.
+const AboutPage = lazy(() => import('@/pages/AboutPage'))
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'))
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'))
@@ -25,6 +26,7 @@ export function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
+        <Route path="/about" element={<AboutPage />} />
         <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
         <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
         <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
