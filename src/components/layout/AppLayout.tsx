@@ -1,18 +1,21 @@
-import { Outlet } from 'react-router-dom'
-import { BottomNav } from './BottomNav'
+import { Link, Outlet } from 'react-router-dom'
+import { BottomNav, DesktopNav } from './BottomNav'
 import { DemoBanner, MovingBanner, OfflineBanner } from './StatusBanners'
 
 export function AppLayout() {
   return (
-    <div className="min-h-dvh pb-[calc(5rem+env(safe-area-inset-bottom))]">
+    <div className="min-h-dvh pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
       <div className="sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
         <OfflineBanner />
         <DemoBanner />
         <MovingBanner />
       </div>
-      <main className="mx-auto w-full max-w-2xl px-4 pt-4 sm:px-6">
-        <Outlet />
-      </main>
+      <div className="mx-auto flex w-full max-w-7xl gap-8 px-4 sm:px-6 lg:px-8">
+        <DesktopNav />
+        <main id="main-content" className="min-w-0 flex-1 py-6 lg:py-10">
+          <Outlet />
+        </main>
+      </div>
       <BottomNav />
     </div>
   )
