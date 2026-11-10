@@ -38,8 +38,8 @@ jobs:
         env:
           # قيم عامة فقط (Project URL + Publishable/anon key) من: Settings → Secrets and variables → Actions → Variables.
           # فارغة ← يُبنى التطبيق بالوضع التجريبي. لا تضع service_role هنا أبدًا (التطبيق يرفضه على أي حال).
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://iokdoysweppfcspfvlde.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'sb_publishable_qYoX3QJttU-eo0_5AYOjUg__XcJyaYe' }}
       - name: Guard — no secret keys in the bundle
         run: |
           if grep -rEl "sb_secret_[A-Za-z0-9]{8,}" dist; then echo "::error::secret key found in dist"; exit 1; fi
