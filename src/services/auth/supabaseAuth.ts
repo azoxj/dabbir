@@ -62,8 +62,7 @@ export function createSupabaseAuth(): AuthService {
 
     async signInWithGoogle() {
       throw new AppError('google_not_configured', 'الدخول باستخدام Google غير متاح حاليًا. استخدم البريد الإلكتروني وكلمة المرور.')
-      /* const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl('/') } })
-      if (error) throw toAppError(error) */
+
     },
 
     async sendPasswordReset(email) {
