@@ -8,8 +8,10 @@ import { getSupabase } from '@/services/supabaseClient'
 type Entry = { user_id: string; alias: string; joined_at: string }
 type Result = { user_id: string; points: number; position: number; month: string }
 const currentMonth = () => {
-  const now = new Date()
-  return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), '01'].join('-')
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit' }).formatToParts(new Date())
+  const year = parts.find(p => p.type === 'year')?.value
+  const month = parts.find(p => p.type === 'month')?.value
+  return `${year}-${month}-01`
 }
 export default function ChallengesPage() {
   const { user } = useAuth()
@@ -88,7 +90,7 @@ export default function ChallengesPage() {
       </Card>}
     <Card>
       <CardTitle>لوحة المنافسة</CardTitle>
-      <p className="text-sm text-ink-600">المشاركون هذا الشهر: {entries.length}. النقاط والترتيب بتظهر بعد تفعيل الاحتساب الموثوق من السيرفر؛ ما راح نعرض ترتيبًا وهميًا.</p>
+      <p className="text-sm text-ink-600">المشاركون هذا الشهر: {entries.length}. تُحسب النقاط بعد نهاية الشهر: 5 نقاط لكل يوم تسجّل فيه مصروفًا (بحد أقصى 100). للتأهل يلزم الاشتراك قبل نهاية الشهر بسبعة أيام على الأقل، والتسجيل في 3 أيام مختلفة. عند التعادل يفوز الأسبق اشتراكًا. لا نعرض مبالغك لأحد.</p>
       {entries.length > 0 && <ul className="mt-3 space-y-2">{entries.map(e => <li key={e.user_id} className="flex items-center justify-between rounded-xl bg-ink-50 p-3 text-sm"><span>👤 {e.alias}</span><span className="text-ink-500">مشارك</span></li>)}</ul>}
     </Card>
     <Card>
@@ -96,6 +98,6 @@ export default function ChallengesPage() {
       {results.filter(r => r.position === 1).length === 0 ? <p className="text-sm text-ink-500">ما فيه فائز معتمد للحين. الأوسمة ما تُمنح إلا بعد إغلاق الشهر والتحقق من النتائج.</p> :
         <ul className="space-y-2">{results.filter(r => r.position === 1).map(r => <li key={r.month} className="rounded-xl bg-amber-50 p-3 text-sm">🥇 {r.month} — {entries.find(e => e.user_id === r.user_id)?.alias ?? 'فائز سابق'} · {r.points} نقطة</li>)}</ul>}
     </Card>
-    <p className="pb-4 text-xs leading-6 text-ink-500">التحديات قيد الإطلاق المرحلي: الاشتراك يعمل، أما احتساب النقاط وإعلان الفائز فغير مفعّلين حتى اكتمال نظام التحقق والعدالة.</p>
+    <p className="pb-4 text-xs leading-6 text-ink-500">النقاط تعتمد على أيام تسجيل المصاريف وليس على قيمة الدخل أو الإنفاق. فائز واحد مؤهل شهريًا، ووسامه يبقى ظاهرًا في قاعة الأوسمة. لا يمكن التحقق من صحة كل مصروف يدخله المستخدم.</p>
   </div>
 }
