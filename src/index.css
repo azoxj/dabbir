@@ -13,7 +13,7 @@
   --color-ink-500: #617680;
   --color-ink-300: #b9c8cd;
   --color-ink-100: #e6eef0;
-  --color-surface: #f4f7f8;
+  --color-surface: #f5f8f5;
   --color-brand-50: #ecf7f4;
   --color-brand-100: #d3eee7;
   --color-brand-500: #0b927c;
@@ -38,4 +38,10 @@
   input, select, textarea { font-size: 16px; }
   :focus-visible { outline: 3px solid var(--color-brand-500); outline-offset: 2px; }
   input[type='number']::-webkit-inner-spin-button { display: none; }
+}
+
+@layer base {
+  body { background-image: radial-gradient(ellipse 80% 45% at 90% -15%, rgba(11,146,124,.11), transparent 75%); }
+  ::selection { background: #b9e7d8; color: #0b1f2d; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 }
