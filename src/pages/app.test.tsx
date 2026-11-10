@@ -8,7 +8,7 @@ describe('routing & auth', () => {
   it('redirects signed-out users to the login page', async () => {
     renderApp('/budget')
     expect(await screen.findByRole('heading', { name: 'تسجيل الدخول' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Google/ })).not.toBeInTheDocument() // غير ظاهر في الوضع التجريبي
+    expect(screen.getByRole('button', { name: /Google/ })).toBeDisabled() // زر Google ظاهر لكن غير مفعّل حتى تهيئة المزود
   })
 
   it('shows Arabic validation errors on login', async () => {
