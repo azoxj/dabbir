@@ -1,3 +1,4 @@
+import { OwnerNavLink } from './OwnerNavLink'
 import { Outlet } from 'react-router-dom'
 import { BottomNav, DesktopNav } from './BottomNav'
 import { DemoBanner, MovingBanner, OfflineBanner } from './StatusBanners'
@@ -10,6 +11,7 @@ export function AppLayout() {
         <DemoBanner />
         <MovingBanner />
       </div>
+      <OwnerNavLink />
       <div className="mx-auto flex w-full max-w-7xl gap-8 px-4 sm:px-6 lg:px-8">
         <DesktopNav />
         <main id="main-content" className="min-w-0 flex-1 py-6 lg:py-10">
