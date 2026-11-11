@@ -11,7 +11,7 @@ export function OwnerNavLink() {
     let active = true
     getSupabase().rpc('owner_analytics').then(({ error }) => {
       if (active && !error) setAllowed(true)
-    }).catch(() => {})
+    })
     return () => { active = false }
   }, [])
   if (!allowed) return null
