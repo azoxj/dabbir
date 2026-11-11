@@ -82,7 +82,7 @@ describe('features (guest demo data)', () => {
   it('budget: add an expense with Arabic digits, and reject invalid input', async () => {
     const user = userEvent.setup()
     await asGuest()
-    await user.click(await screen.findByRole('link', { name: /الميزانية/ }))
+    await user.click(await within(await screen.findByRole('navigation', { name: 'القائمة الرئيسية' })).findByRole('link', { name: /الميزانية/ }))
     const amount = await screen.findByLabelText('المبلغ (ر.س)')
     await user.click(screen.getByRole('button', { name: 'إضافة المصروف' }))
     expect(await screen.findByText(/اكتب مبلغًا صحيحًا/)).toBeInTheDocument()
@@ -98,7 +98,7 @@ describe('features (guest demo data)', () => {
     const user = userEvent.setup()
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     await asGuest()
-    await user.click(await screen.findByRole('link', { name: /الالتزامات/ }))
+    await user.click(await within(await screen.findByRole('navigation', { name: 'القائمة الرئيسية' })).findByRole('link', { name: /الالتزامات/ }))
     await user.click(await screen.findByRole('button', { name: '+ إضافة التزام أو موعد' }))
     await user.type(screen.getByLabelText('الاسم'), 'تجديد الإقامة')
     await user.click(screen.getByRole('button', { name: 'حفظ' }))
@@ -120,7 +120,7 @@ describe('features (guest demo data)', () => {
   it('goals: create a goal and deposit into it', async () => {
     const user = userEvent.setup()
     await asGuest()
-    await user.click(await screen.findByRole('link', { name: /الأهداف/ }))
+    await user.click(await within(await screen.findByRole('navigation', { name: 'القائمة الرئيسية' })).findByRole('link', { name: /الأهداف/ }))
     await user.click(await screen.findByRole('button', { name: '+ هدف ادخار جديد' }))
     await user.type(screen.getByLabelText('اسم الهدف'), 'لابتوب')
     await user.type(screen.getByLabelText('المبلغ المستهدف'), '5000')
@@ -134,7 +134,7 @@ describe('features (guest demo data)', () => {
   it('sign out returns to login', async () => {
     const user = userEvent.setup()
     await asGuest()
-    await user.click(await screen.findByRole('link', { name: /حسابي/ }))
+    await user.click(await within(await screen.findByRole('navigation', { name: 'القائمة الرئيسية' })).findByRole('link', { name: /حسابي/ }))
     await user.click(await screen.findByRole('button', { name: 'تسجيل الخروج' }))
     expect(await screen.findByRole('heading', { name: 'تسجيل الدخول' })).toBeInTheDocument()
   })
@@ -150,7 +150,7 @@ describe('profile & settings', () => {
     await user.type(name, 'عبدالله')
     await user.click(screen.getByRole('button', { name: 'حفظ' }))
     expect(await screen.findByText('تم حفظ الاسم ✓')).toBeInTheDocument()
-    await user.click(screen.getByRole('link', { name: /اليوم/ }))
+    await user.click(within(await screen.findByRole('navigation', { name: 'القائمة الرئيسية' })).getByRole('link', { name: /اليوم/ }))
     expect(await screen.findByText(/عبدالله/)).toBeInTheDocument()
   })
 
@@ -164,7 +164,7 @@ describe('profile & settings', () => {
     await user.click(btn) // تأكيد
     expect(await screen.findByText('تم مسح بياناتك')).toBeInTheDocument()
     expect(confirm).toHaveBeenCalledTimes(2)
-    await user.click(screen.getByRole('link', { name: /الالتزامات/ }))
+    await user.click(within(await screen.findByRole('navigation', { name: 'القائمة الرئيسية' })).getByRole('link', { name: /الالتزامات/ }))
     expect(await screen.findByText('ما عندك التزامات قادمة')).toBeInTheDocument()
   })
 })
@@ -177,7 +177,7 @@ describe('commitment → expense', () => {
     await service.signInAsGuest()
     await user.click(within(await screen.findByTestId('commitment-list')).getByRole('button', { name: 'تم قسط السيارة' }))
     await screen.findByText(/وسُجّل كمصروف/)
-    await user.click(screen.getByRole('link', { name: /الميزانية/ }))
+    await user.click(within(await screen.findByRole('navigation', { name: 'القائمة الرئيسية' })).getByRole('link', { name: /الميزانية/ }))
     const list = await screen.findByTestId('expense-list')
     expect(within(list).getByText('قسط السيارة')).toBeInTheDocument()
   })
