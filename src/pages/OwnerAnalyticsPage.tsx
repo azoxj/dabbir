@@ -25,7 +25,7 @@ export default function OwnerAnalyticsPage() {
       if (!mounted) return
       if (error) { setStatus(error.code === '42501' || error.code === 'PGRST301' ? 'denied' : 'error'); return }
       setData(data as Analytics)
-    }).catch(() => mounted && setStatus('error'))
+    })
     return () => { mounted = false }
   }, [])
 
