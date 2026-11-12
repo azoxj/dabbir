@@ -1,11 +1,13 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { appConfig } from '@/config/env'
+import { getRuntimeMode } from '@/config/mode'
 
 let client: SupabaseClient | null = null
 
 /** عميل Supabase بالمفتاح العام فقط. الحماية الفعلية للبيانات عبر RLS في قاعدة البيانات. */
 export function getSupabase(): SupabaseClient {
-  if (appConfig.mode !== 'supabase' || !appConfig.supabaseUrl || !appConfig.supabaseAnonKey) {
+  // الوضع التجريبي لا يُنشئ عميل Supabase أبدًا (فصل تام عن الحسابات الحقيقية).
+  if (getRuntimeMode() !== 'supabase' || !appConfig.supabaseUrl || !appConfig.supabaseAnonKey) {
     throw new Error('Supabase is not configured')
   }
   client ??= createClient(appConfig.supabaseUrl, appConfig.supabaseAnonKey, {

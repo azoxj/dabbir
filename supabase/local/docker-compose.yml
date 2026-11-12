@@ -1,0 +1,76 @@
+# Supabase محلي للتطوير والاختبار فقط — نفس صور Supabase الرسمية (Postgres + GoTrue + PostgREST)
+# + Mailpit لالتقاط رسائل التأكيد والاستعادة. لا يتصل بأي مشروع حقيقي.
+# التشغيل: npm run supabase:start   الإيقاف: npm run supabase:stop
+name: dabbir-local
+services:
+  db:
+    image: supabase/postgres:17.11.0.018
+    ports: ["127.0.0.1:54322:5432"]
+    environment:
+      POSTGRES_PASSWORD: ${LOCAL_DB_PASSWORD}
+      JWT_SECRET: ${LOCAL_JWT_SECRET}
+      JWT_EXP: ${LOCAL_JWT_EXP:-3600}
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  mail:
+    image: axllent/mailpit:v1.33.1
+    ports: ["127.0.0.1:54324:8025"]
+
+  auth:
+    image: supabase/gotrue:v2.197.0
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["127.0.0.1:54329:9999"]
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: http://localhost:54321
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${LOCAL_DB_PASSWORD}@db:5432/postgres
+      GOTRUE_SITE_URL: ${LOCAL_SITE_URL:-http://localhost:4180/dabbir/}
+      GOTRUE_URI_ALLOW_LIST: ${LOCAL_SITE_URL:-http://localhost:4180/dabbir/}**
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: ${LOCAL_JWT_EXP:-3600}
+      GOTRUE_JWT_SECRET: ${LOCAL_JWT_SECRET}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "false"            # تأكيد البريد إلزامي (مثل الإنتاج)
+      GOTRUE_MAILER_SECURE_EMAIL_CHANGE_ENABLED: "true"
+      GOTRUE_PASSWORD_MIN_LENGTH: "8"
+      GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED: "true"
+      GOTRUE_SMTP_HOST: mail
+      GOTRUE_SMTP_PORT: "1025"
+      GOTRUE_SMTP_USER: local
+      GOTRUE_SMTP_PASS: local
+      GOTRUE_SMTP_ADMIN_EMAIL: no-reply@dabbir.local
+      GOTRUE_SMTP_SENDER_NAME: دبّر
+      GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: "1000"
+      # أقل مدة بين رسالتين لنفس البريد. الإنتاج في Supabase = 60 ثانية؛ محليًا أقصر لتسريع الاختبارات.
+      GOTRUE_SMTP_MAX_FREQUENCY: ${LOCAL_SMTP_MAX_FREQUENCY:-5s}
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "دبّر — أكّد بريدك الإلكتروني"
+      GOTRUE_MAILER_SUBJECTS_RECOVERY: "دبّر — استعادة كلمة المرور"
+      GOTRUE_EXTERNAL_GOOGLE_ENABLED: "false"
+
+  rest:
+    image: postgrest/postgrest:v16.5
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["127.0.0.1:54323:3000"]
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${LOCAL_DB_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${LOCAL_JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: ${LOCAL_JWT_SECRET}

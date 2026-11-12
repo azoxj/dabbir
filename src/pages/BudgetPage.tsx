@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { TrashIcon } from '@/components/icons/Icons'
+import { BankImportCard } from '@/components/budget/BankImportCard'
 import { PageHeader } from '@/components/layout/AppLayout'
 import { Alert, AmountField, Button, Card, CardTitle, EmptyState, PageLoader, ProgressBar, SelectField, Stat, TextField } from '@/components/ui'
 import { useCommitments } from '@/hooks/useCommitments'
@@ -8,10 +9,12 @@ import { useBudgetLimits, useMonthExpenses, useProfile } from '@/hooks/useFinanc
 import { useToast } from '@/hooks/useToast'
 import { useToday } from '@/hooks/useToday'
 import { summarizeMonth } from '@/lib/budget'
+import { fixedMonthlyCosts, nextMonthlyDate } from '@/lib/commitments'
 import { formatShortDate, monthRange } from '@/lib/dates'
-import { CATEGORY_EMOJI, CATEGORY_LABELS } from '@/lib/labels'
+import { CATEGORY_EMOJI, CATEGORY_LABELS, KIND_LABELS } from '@/lib/labels'
 import { formatSAR, parseAmount } from '@/lib/money'
-import { EXPENSE_CATEGORIES, type ExpenseCategory, type Profile } from '@/types/domain'
+import { EXPENSE_CATEGORIES, type Commitment, type CommitmentKind, type Expense, type ExpenseCategory, type ExpensePatch, type NewCommitment, type Profile } from '@/types/domain'
+
 
 export default function BudgetPage() {
   const today = useToday()
@@ -42,6 +45,7 @@ export default function BudgetPage() {
   return (
     <div className="space-y-4">
       <PageHeader title="الميزانية والمصاريف" subtitle="سجّل مصاريفك أول بأول وحدد سقفًا لكل فئة." />
+      <Link to="/reports" className="-mt-2 inline-block text-sm font-bold text-brand-600">📊 التقارير والإحصائيات ←</Link>
 
       <Card>
         <div className="grid grid-cols-2 gap-2.5">
@@ -63,7 +67,11 @@ export default function BudgetPage() {
         )}
       </Card>
 
+      <FixedCostsCard commitments={commitments.data ?? []} today={today} income={summary.income}
+        onAdd={async (c) => { await commitments.add(c); toast.show('تمت إضافة التكلفة الثابتة ✓') }} />
+
       <AddExpenseCard today={today} onAdd={async (e) => { await expenses.add(e); toast.show('تمت إضافة المصروف ✓') }} />
+      <BankImportCard today={today} expenses={expenses.data} onAdd={async (e) => { await expenses.add(e) }} />
 
       <Card>
         <CardTitle>حسب الفئة</CardTitle>
@@ -77,17 +85,9 @@ export default function BudgetPage() {
         ) : (
           <ul className="divide-y divide-ink-100" data-testid="expense-list">
             {expenses.data.map((e) => (
-              <li key={e.id} className="flex items-center gap-3 py-2.5">
-                <span aria-hidden className="text-xl">{CATEGORY_EMOJI[e.category]}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{e.note || CATEGORY_LABELS[e.category]}</p>
-                  <p className="text-xs text-ink-500">{CATEGORY_LABELS[e.category]} · {formatShortDate(e.spentOn)}</p>
-                </div>
-                <span className="shrink-0 font-bold">{formatSAR(e.amount)}</span>
-                <button onClick={() => void remove(e.id)} className="shrink-0 rounded-lg p-2 text-ink-500 hover:bg-danger-50 hover:text-danger-600" aria-label={`حذف ${e.note || CATEGORY_LABELS[e.category]}`}>
-                  <TrashIcon className="size-5" />
-                </button>
-              </li>
+              <ExpenseRow key={e.id} expense={e} today={today}
+                onDelete={() => void remove(e.id)}
+                onSave={async (patch) => { await expenses.update(e.id, patch); toast.show('تم تعديل المصروف ✓') }} />
             ))}
           </ul>
         )}
@@ -256,6 +256,147 @@ function IncomeSettingsCard({ profile, onSave }: { profile: Profile; onSave: (p:
         {error && <Alert tone="error">{error}</Alert>}
         <Button type="submit" variant="secondary" block loading={busy}>حفظ</Button>
       </form>
+    </Card>
+  )
+}
+
+function ExpenseRow({ expense: e, today, onDelete, onSave }: { expense: Expense; today: string; onDelete: () => void; onSave: (p: ExpensePatch) => Promise<void> }) {
+  const [editing, setEditing] = useState(false)
+  const [amount, setAmount] = useState(String(e.amount))
+  const [category, setCategory] = useState<ExpenseCategory>(e.category)
+  const [note, setNote] = useState(e.note ?? '')
+  const [date, setDate] = useState(e.spentOn)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const label = e.note || CATEGORY_LABELS[e.category]
+
+  const save = async (ev: FormEvent) => {
+    ev.preventDefault()
+    const value = parseAmount(amount)
+    if (value === null) return setError('اكتب مبلغًا صحيحًا أكبر من صفر.')
+    if (date > today) return setError('ما تقدر تسجل مصروف بتاريخ مستقبلي.')
+    setSaving(true)
+    setError(null)
+    try {
+      await onSave({ amount: value, category, note: note.trim() || null, spentOn: date })
+      setEditing(false)
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (editing) {
+    return (
+      <li className="py-3">
+        <form onSubmit={save} noValidate className="space-y-3 rounded-xl bg-surface p-3" aria-label={`تعديل ${label}`}>
+          <div className="grid grid-cols-2 gap-3">
+            <AmountField label="المبلغ" value={amount} onChange={(x) => setAmount(x.target.value)} autoFocus />
+            <SelectField label="الفئة" value={category} onChange={(x) => setCategory(x.target.value as ExpenseCategory)}>
+              {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
+            </SelectField>
+            <TextField label="الملاحظة" value={note} onChange={(x) => setNote(x.target.value)} maxLength={200} />
+            <TextField label="التاريخ" type="date" value={date} max={today} onChange={(x) => setDate(x.target.value)} />
+          </div>
+          {error && <Alert tone="error">{error}</Alert>}
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" className="flex-1" loading={saving}>حفظ التعديل</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>إلغاء</Button>
+          </div>
+        </form>
+      </li>
+    )
+  }
+  return (
+    <li className="flex items-center gap-2 py-2.5">
+      <span aria-hidden className="text-xl">{CATEGORY_EMOJI[e.category]}</span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium">{label}</p>
+        <p className="text-xs text-ink-500">{CATEGORY_LABELS[e.category]} · {formatShortDate(e.spentOn)}</p>
+      </div>
+      <span className="shrink-0 font-bold">{formatSAR(e.amount)}</span>
+      <button onClick={() => setEditing(true)} className="shrink-0 rounded-lg px-2 py-2 text-xs font-bold text-brand-600 hover:bg-brand-50" aria-label={`تعديل ${label}`}>تعديل</button>
+      <button onClick={onDelete} className="shrink-0 rounded-lg p-2 text-ink-500 hover:bg-danger-50 hover:text-danger-600" aria-label={`حذف ${label}`}>
+        <TrashIcon className="size-5" />
+      </button>
+    </li>
+  )
+}
+
+const FIXED_KINDS: CommitmentKind[] = ['bill', 'installment', 'other']
+
+function FixedCostsCard({ commitments, today, income, onAdd }: { commitments: Commitment[]; today: string; income: number; onAdd: (c: NewCommitment) => Promise<void> }) {
+  const { items, total } = fixedMonthlyCosts(commitments)
+  const [open, setOpen] = useState(false)
+  const [title, setTitle] = useState('')
+  const [amount, setAmount] = useState('')
+  const [day, setDay] = useState('1')
+  const [kind, setKind] = useState<CommitmentKind>('bill')
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    const amt = parseAmount(amount)
+    const d = Number(day)
+    if (!title.trim()) return setError('اكتب اسم التكلفة (مثال: الإيجار).')
+    if (amt === null) return setError('اكتب مبلغًا صحيحًا.')
+    if (!Number.isInteger(d) || d < 1 || d > 31) return setError('يوم الاستحقاق بين 1 و 31.')
+    setSaving(true)
+    setError(null)
+    try {
+      await onAdd({ title: title.trim(), kind, dueDate: nextMonthlyDate(today, d), dueTime: null, amount: amt, recurrence: 'monthly', notes: null })
+      setTitle(''); setAmount(''); setOpen(false)
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card aria-labelledby="fixed-title">
+      <CardTitle action={<Link to="/commitments" className="text-sm font-bold text-brand-600">إدارة</Link>}>
+        <span id="fixed-title">التكاليف الثابتة الشهرية</span>
+      </CardTitle>
+      {items.length === 0 ? (
+        <p className="text-sm text-ink-500">أضف الإيجار وقسط السيارة والفواتير الثابتة؛ تُخصم تلقائيًا من المتبقي حتى تسددها.</p>
+      ) : (
+        <>
+          <ul className="divide-y divide-ink-100" data-testid="fixed-costs">
+            {items.map((c) => (
+              <li key={c.id} className="flex items-center justify-between gap-2 py-2 text-sm">
+                <span className="min-w-0 truncate"><b>{c.title}</b> <span className="text-xs text-ink-500">· {KIND_LABELS[c.kind]} · يوم {Number(c.dueDate.slice(8))}</span></span>
+                <span className="shrink-0 font-bold">{formatSAR(c.amount ?? 0)}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-2 flex justify-between border-t border-ink-100 pt-2 text-sm font-bold">
+            <span>المجموع{income > 0 ? ` (${Math.round((total / income) * 100)}% من الدخل)` : ''}</span>
+            <span data-testid="fixed-total">{formatSAR(total)}</span>
+          </div>
+        </>
+      )}
+      {open ? (
+        <form onSubmit={submit} noValidate className="mt-3 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <TextField label="اسم التكلفة" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="الإيجار" autoFocus />
+            <AmountField label="المبلغ الشهري" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
+            <TextField label="يوم الاستحقاق" type="number" inputMode="numeric" min={1} max={31} value={day} onChange={(e) => setDay(e.target.value)} />
+            <SelectField label="النوع" value={kind} onChange={(e) => setKind(e.target.value as CommitmentKind)}>
+              {FIXED_KINDS.map((k) => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
+            </SelectField>
+          </div>
+          {error && <Alert tone="error">{error}</Alert>}
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" className="flex-1" loading={saving}>إضافة</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>إلغاء</Button>
+          </div>
+        </form>
+      ) : (
+        <Button variant="secondary" size="sm" block className="mt-3" onClick={() => setOpen(true)}>+ تكلفة ثابتة</Button>
+      )}
     </Card>
   )
 }

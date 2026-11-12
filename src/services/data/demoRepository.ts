@@ -4,7 +4,7 @@
  */
 import { AppError } from '@/services/errors'
 import { roundMoney } from '@/lib/money'
-import type { BudgetLimit, Commitment, Expense, Profile, SavingsGoal } from '@/types/domain'
+import { DEFAULT_PREFERENCES, type BudgetLimit, type Commitment, type Expense, type Profile, type SavingsGoal } from '@/types/domain'
 import type { DataRepository } from './types'
 
 export interface DemoState {
@@ -23,13 +23,16 @@ export function createDemoRepository(
 ): DataRepository {
   const storage = opts.storage ?? window.localStorage
   const key = demoStorageKey(userId)
-  const empty = (): DemoState => ({ profile: { id: userId, displayName: null, monthlyIncome: 0, savingsTarget: 0, payday: 27 }, expenses: [], limits: [], commitments: [], goals: [] })
+  const empty = (): DemoState => ({ profile: { id: userId, displayName: null, monthlyIncome: 0, savingsTarget: 0, payday: 27, ...DEFAULT_PREFERENCES }, expenses: [], limits: [], commitments: [], goals: [] })
 
   const load = (): DemoState => {
     const raw = storage.getItem(key)
     if (raw) {
       try {
-        return JSON.parse(raw) as DemoState
+        const s = JSON.parse(raw) as DemoState
+        // بيانات محفوظة من إصدار أقدم بدون التفضيلات.
+        s.profile = { ...DEFAULT_PREFERENCES, ...s.profile }
+        return s
       } catch { /* بيانات تالفة → نبدأ من جديد */ }
     }
     const s = opts.seed ? opts.seed(userId) : empty()
@@ -66,6 +69,12 @@ export function createDemoRepository(
       const e: Expense = { ...input, amount: roundMoney(input.amount), id: crypto.randomUUID(), createdAt: new Date().toISOString() }
       s.expenses.push(e)
       return e
+    }),
+    updateExpense: (id, patch) => mutate((s) => {
+      const i = s.expenses.findIndex((e) => e.id === id)
+      if (i < 0) throw notFound()
+      if (patch.amount !== undefined) assertPositive(patch.amount)
+      return (s.expenses[i] = { ...s.expenses[i]!, ...patch, id })
     }),
     deleteExpense: (id) => mutate((s) => void (s.expenses = s.expenses.filter((e) => e.id !== id))),
 
@@ -114,7 +123,7 @@ export function createDemoRepository(
       s.limits = []
       s.commitments = []
       s.goals = []
-      s.profile = { ...s.profile, monthlyIncome: 0, savingsTarget: 0, payday: 27 }
+      s.profile = { ...s.profile, monthlyIncome: 0, savingsTarget: 0, payday: 27, ...DEFAULT_PREFERENCES }
     }),
   }
 }

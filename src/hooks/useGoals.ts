@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import type { NewSavingsGoal } from '@/types/domain'
+import type { NewSavingsGoal, SavingsGoal } from '@/types/domain'
 import { useAsync } from './useAsync'
 import { useRepository } from './useRepository'
 
@@ -15,9 +15,13 @@ export function useGoals() {
     await repo.adjustGoal(id, delta)
     await reload()
   }, [repo, reload])
+  const update = useCallback(async (id: string, patch: Partial<Pick<SavingsGoal, 'name' | 'targetAmount' | 'targetDate'>>) => {
+    await repo.updateGoal(id, patch)
+    await reload()
+  }, [repo, reload])
   const remove = useCallback(async (id: string) => {
     await repo.deleteGoal(id)
     await reload()
   }, [repo, reload])
-  return { ...state, add, adjust, remove }
+  return { ...state, add, update, adjust, remove }
 }

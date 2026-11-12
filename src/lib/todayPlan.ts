@@ -59,7 +59,7 @@ export function buildTodayPlan(input: PlanInput): TodayPlan {
 
   // 1) الالتزامات حسب الاستحقاق
   for (const c of input.commitments) {
-    const status = dueStatus(c, today)
+    const status = dueStatus(c, today, profile.alertDays)
     const days = daysBetween(today, c.dueDate)
     const time = c.dueTime ? ` الساعة ${c.dueTime.slice(0, 5)}` : ''
     if (status === 'overdue') {

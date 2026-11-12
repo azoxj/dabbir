@@ -11,6 +11,7 @@ import DashboardPage from '@/pages/DashboardPage'
 import LoginPage from '@/pages/auth/LoginPage'
 
 // الصفحات الأقل استخدامًا تُحمَّل عند الحاجة لتصغير الحزمة الأولى.
+const ReportsPage = lazy(() => import('@/pages/ReportsPage'))
 const AboutPage = lazy(() => import('@/pages/AboutPage'))
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'))
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'))
@@ -37,6 +38,7 @@ export function AppRoutes() {
           <Route path="commitments" element={<CommitmentsPage />} />
           <Route path="goals" element={<GoalsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="challenges" element={<ChallengesPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

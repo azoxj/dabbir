@@ -23,9 +23,10 @@ export function useAsync<T>(loader: () => Promise<T>, deps: readonly unknown[]):
     loaderRef.current = loader
   })
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (opts?: { silent?: boolean }) => {
     const id = ++callId.current
-    setLoading(true)
+    // التحديث الصامت (عند الرجوع للتطبيق) لا يُظهر مؤشر التحميل ولا يخفي البيانات الحالية.
+    if (!opts?.silent) setLoading(true)
     try {
       const result = await loaderRef.current()
       if (id === callId.current) {
@@ -33,7 +34,7 @@ export function useAsync<T>(loader: () => Promise<T>, deps: readonly unknown[]):
         setError(null)
       }
     } catch (e) {
-      if (id === callId.current) setError(dataError(e))
+      if (id === callId.current && !opts?.silent) setError(dataError(e))
     } finally {
       if (id === callId.current) setLoading(false)
     }
@@ -46,7 +47,31 @@ export function useAsync<T>(loader: () => Promise<T>, deps: readonly unknown[]):
     void reload()
   }, [reload, depsKey])
 
-  return { data, error, loading, reload }
+  // مزامنة بين الأجهزة: إعادة جلب البيانات عند الرجوع للتطبيق أو عودة الاتصال.
+  useEffect(() => onAppResume(() => void reload({ silent: true })), [reload])
+
+  return { data, error, loading, reload: useCallback(() => reload(), [reload]) }
+}
+
+/* ---------- إشعار «رجع المستخدم للتطبيق» مشترك لكل المكونات ---------- */
+const resumeListeners = new Set<() => void>()
+let lastResume = 0
+let wired = false
+function fireResume() {
+  const now = Date.now()
+  if (now - lastResume < 2000) return // منع التكرار عند تتابع focus + visibilitychange
+  lastResume = now
+  resumeListeners.forEach((l) => l())
+}
+export function onAppResume(cb: () => void): () => void {
+  if (!wired && typeof window !== 'undefined') {
+    wired = true
+    window.addEventListener('focus', fireResume)
+    window.addEventListener('online', fireResume)
+    document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && fireResume())
+  }
+  resumeListeners.add(cb)
+  return () => resumeListeners.delete(cb)
 }
 
 /** معرّف ثابت لكل كائن (مثل المستودع) حتى يدخل في مفتاح deps. */

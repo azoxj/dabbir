@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { dueReminders } from '@/lib/reminders'
 import { Link } from 'react-router-dom'
 import { Alert, buttonClasses, Card, CardTitle, PageLoader, ProgressBar, Stat } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
@@ -93,6 +94,22 @@ export default function DashboardPage() {
           </Card>
 
           <UpcomingCard commitments={data.commitments} today={today} />
+
+          <Card>
+            <CardTitle>تذكيرات الأهداف والالتزامات</CardTitle>
+            {dueReminders(today, data.commitments, data.goals, data.profile.alertDays).length === 0 ? (
+              <p className="text-sm text-ink-500">ما عندك مواعيد قريبة تحتاج تذكير.</p>
+            ) : (
+              <ul className="space-y-2" aria-label="تذكيرات اليوم">
+                {dueReminders(today, data.commitments, data.goals, data.profile.alertDays).map(item => (
+                  <li key={item.id} className="rounded-xl border border-ink-100 p-3 text-sm">
+                    <p className="font-bold">{item.title}</p><p className="text-ink-600">{item.detail}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-3 text-xs text-ink-500">تذكيرات داخل التطبيق فقط؛ إشعارات الجوال خارج التطبيق تحتاج تفعيلًا منفصلًا.</p>
+          </Card>
 
           {data.goals.length > 0 && (
             <Card>
