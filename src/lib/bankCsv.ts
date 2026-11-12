@@ -41,7 +41,9 @@ function normalizeDate(raw: string): string | null {
   const value = ascii(raw.trim())
   const match = /^(\d{4})[-/]([0-9]{1,2})[-/]([0-9]{1,2})$/.exec(value)
   if (!match) return null
-  const [, year, month, day] = match
+  const year = match[1]!
+  const month = match[2]!
+  const day = match[3]!
   const y = Number(year), m = Number(month), d = Number(day)
   const date = new Date(Date.UTC(y, m - 1, d))
   if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) return null
@@ -61,7 +63,7 @@ const headers = {
 export function previewBankCsv(input: string, existingFingerprints: ReadonlySet<string> = new Set()): BankCsvPreview {
   const rows = csvRows(input)
   if (!rows.length) return { transactions: [], rejectedRows: 0, duplicates: 0 }
-  const header = rows[0].map(value => value.trim().toLowerCase())
+  const header = rows[0]!.map(value => value.trim().toLowerCase())
   const index = (key: keyof typeof headers) => header.findIndex(value => headers[key].includes(value))
   const dateCol = index('date'), merchantCol = index('merchant'), amountCol = index('amount')
   if ([dateCol, merchantCol, amountCol].some(i => i < 0)) throw new Error('Required CSV columns: date, merchant/description, amount/debit')
