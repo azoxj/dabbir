@@ -15,4 +15,16 @@ describe('bank CSV preview', () => {
     expect(() => previewBankCsv('date,amount\n2026-11-12,10')).toThrow()
     expect(() => previewBankCsv('date,merchant,amount\n2026-11-12,"oops,10')).toThrow()
   })
+  it('flags transactions already recorded in the current account', () => {
+    const first = previewBankCsv('date,merchant,amount\n2026-11-12,Cafe,10')
+    const seen = new Set(first.transactions.map(t => t.fingerprint))
+    const second = previewBankCsv('date,merchant,amount\n2026-11-12,Cafe,10', seen)
+    expect(second.transactions).toHaveLength(0)
+    expect(second.duplicates).toBe(1)
+  })
+  it('rejects invalid dates and non-positive amounts', () => {
+    const result = previewBankCsv('date,merchant,amount\n2026-02-29,Shop,5\n2026-11-12,Shop,0\n2026-11-12,Shop,3.123')
+    expect(result.transactions).toHaveLength(0)
+    expect(result.rejectedRows).toBe(3)
+  })
 })
