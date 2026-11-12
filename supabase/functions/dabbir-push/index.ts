@@ -43,8 +43,8 @@ Deno.serve(async (request: Request) => {
       console.error('dabbir push configuration: VAPID public/private keys do not match')
       return respond({ error: 'vapid_key_pair_mismatch' }, 503)
     }
-  } catch {
-    console.error('dabbir push configuration: invalid VAPID key material')
+  } catch (e) {
+    console.error('dabbir push configuration: invalid VAPID key material', e instanceof Error ? e.message.slice(0,160) : 'unknown')
     return respond({ error: 'invalid_vapid_key_material' }, 503)
   }
   webpush.setVapidDetails(subject, publicKey, privateKey)
