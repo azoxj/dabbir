@@ -62,6 +62,7 @@ Deno.serve(async (request: Request) => {
         sent++
       } catch (e) {
         failed++
+        console.error('dabbir push delivery failed', { statusCode: (e as { statusCode?: number }).statusCode ?? null, message: e instanceof Error ? e.message.slice(0, 240) : 'unknown' })
         const status = (e as { statusCode?: number }).statusCode
         if (status === 404 || status === 410) await sb.from('push_subscriptions').delete().eq('id', sub.id)
         else await sb.from('push_delivery_log').delete().eq('subscription_id', sub.id).eq('reminder_key', reminderKey).eq('delivery_day', day)
