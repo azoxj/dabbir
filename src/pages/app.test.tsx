@@ -150,7 +150,7 @@ describe('profile & settings', () => {
     await user.type(name, 'عبدالله')
     await user.click(screen.getByRole('button', { name: 'حفظ' }))
     expect(await screen.findByText('تم حفظ الاسم ✓')).toBeInTheDocument()
-    await user.click(screen.getByRole('link', { name: /اليوم/ }))
+    await user.click(screen.getAllByRole('link', { name: /اليوم/ })[0]!)
     expect(await screen.findByText(/عبدالله/)).toBeInTheDocument()
   })
 
@@ -164,7 +164,7 @@ describe('profile & settings', () => {
     await user.click(btn) // تأكيد
     expect(await screen.findByText('تم مسح بياناتك')).toBeInTheDocument()
     expect(confirm).toHaveBeenCalledTimes(2)
-    await user.click(screen.getByRole('link', { name: /الالتزامات/ }))
+    await user.click(screen.getAllByRole('link', { name: /الالتزامات/ })[0]!)
     expect(await screen.findByText('ما عندك التزامات قادمة')).toBeInTheDocument()
   })
 })
@@ -177,7 +177,7 @@ describe('commitment → expense', () => {
     await service.signInAsGuest()
     await user.click(within(await screen.findByTestId('commitment-list')).getByRole('button', { name: 'تم قسط السيارة' }))
     await screen.findByText(/وسُجّل كمصروف/)
-    await user.click(screen.getByRole('link', { name: /الميزانية/ }))
+    await user.click(screen.getAllByRole('link', { name: /الميزانية/ })[0]!)
     const list = await screen.findByTestId('expense-list')
     expect(within(list).getByText('قسط السيارة')).toBeInTheDocument()
   })
