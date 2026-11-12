@@ -2,7 +2,9 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/AppLayout'
 import { BackupCard } from '@/components/settings/BackupCard'
-import { Alert, Button, buttonClasses, Card, CardTitle, PageLoader, TextField } from '@/components/ui'
+import { Alert, Button, buttonClasses, Card, CardTitle, PageLoader, SelectField, TextField } from '@/components/ui'
+import { ALERT_DAY_OPTIONS, type Profile } from '@/types/domain'
+import { exitDemoMode, getRuntimeMode, realAccountsAvailable } from '@/config/mode'
 import { appConfig } from '@/config/env'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useFinance'
@@ -19,10 +21,14 @@ export default function SettingsPage() {
   const toast = useToast()
   const [busy, setBusy] = useState(false)
 
-  const signOut = async () => {
+  const isDemo = getRuntimeMode() === 'demo'
+  const signOut = async (everywhere = false) => {
+    if (everywhere && !window.confirm('تسجيل الخروج من كل الأجهزة؟ ستحتاج تسجيل الدخول من جديد في كل جهاز.')) return
     setBusy(true)
     try {
-      await service.signOut()
+      await service.signOut({ everywhere })
+      // الخروج من الوضع التجريبي يعيدك لصفحة الحسابات الحقيقية.
+      if (isDemo && realAccountsAvailable) exitDemoMode()
     } catch (e) {
       toast.show(toAppError(e).message, 'error')
       setBusy(false)
@@ -98,6 +104,8 @@ export default function SettingsPage() {
         {!canRequestNotifications() && <p className="mt-2 text-xs text-ink-500">على الآيفون: افتح الموقع من Safari ثم أضفه للشاشة الرئيسية وافتحه من الأيقونة.</p>}
       </Card>
 
+      {profile.data && <PreferencesCard profile={profile.data} onSave={async (patch) => { await profile.update(patch); toast.show('تم حفظ التفضيلات ✓') }} />}
+
       <BackupCard onImported={() => void profile.reload()} />
 
       <Card>
@@ -119,6 +127,7 @@ export default function SettingsPage() {
       <section className="space-y-3 rounded-3xl border border-ink-100 bg-white p-5 shadow-sm" aria-label="أمان الحساب">
         <h2 className="text-lg font-bold text-ink-900">أمان الحساب</h2>
         <Button variant="danger" block loading={busy} onClick={() => void signOut()}>تسجيل الخروج</Button>
+        {!isDemo && <Button variant="ghost" block disabled={busy} onClick={() => void signOut(true)}>تسجيل الخروج من كل الأجهزة</Button>}
       </section>
       <p className="pb-4 text-center text-xs text-ink-500">دبّر · حسابك تحت تحكمك</p>
     </div>
@@ -147,5 +156,38 @@ function ProfileForm({ initialName, onSave }: { initialName: string; onSave: (na
       <TextField className="flex-1" label="الاسم" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} autoComplete="name" error={error} />
       <Button type="submit" size="sm" className="mb-1 min-h-12" loading={saving}>حفظ</Button>
     </form>
+  )
+}
+
+function PreferencesCard({ profile, onSave }: { profile: Profile; onSave: (p: Partial<Profile>) => Promise<void> }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const save = async (patch: Partial<Profile>) => {
+    setBusy(true)
+    setError(null)
+    try {
+      await onSave(patch)
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Card aria-labelledby="prefs-title">
+      <CardTitle><span id="prefs-title">التفضيلات</span></CardTitle>
+      <div className="space-y-4">
+        <label className="flex items-center justify-between gap-3 text-sm font-semibold">
+          <span>عرض التاريخ الهجري في الرئيسية</span>
+          <input type="checkbox" className="size-6 accent-brand-600" checked={profile.showHijri} disabled={busy}
+            onChange={(e) => void save({ showHijri: e.target.checked })} />
+        </label>
+        <SelectField label="نبّهني على الالتزامات قبل موعدها بـ" value={String(profile.alertDays)} disabled={busy}
+          onChange={(e) => void save({ alertDays: Number(e.target.value) })}>
+          {ALERT_DAY_OPTIONS.map((d) => <option key={d} value={d}>{d === 1 ? 'يوم واحد' : d === 2 ? 'يومين' : `${d} أيام`}</option>)}
+        </SelectField>
+        {error && <Alert tone="error">{error}</Alert>}
+      </div>
+    </Card>
   )
 }
