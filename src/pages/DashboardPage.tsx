@@ -32,14 +32,14 @@ export default function DashboardPage() {
   const name = data?.profile.displayName || user?.displayName
 
   return (
-    <div className="space-y-6">
-      <header className="rounded-3xl bg-gradient-to-bl from-emerald-950 via-teal-900 to-emerald-700 px-6 py-8 text-white shadow-lg shadow-emerald-950/10 sm:px-8">
-        <p className="text-sm text-emerald-100">{greeting()}{name ? `، ${name}` : ''} 👋</p>
-        <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">وش أسوي اليوم؟</h1>
-        <p className="mt-3 text-xs text-emerald-100">{formatWeekday(today)} {formatDate(today)} · {formatHijri(today)}</p>
+    <div className="space-y-5 sm:space-y-7">
+      <header className="relative overflow-hidden rounded-[2rem] bg-gradient-to-bl from-emerald-950 via-teal-900 to-emerald-700 px-5 py-7 text-white shadow-lg shadow-emerald-950/10 sm:px-8 sm:py-9">
+        <div aria-hidden="true" className="pointer-events-none absolute -left-12 -top-16 h-44 w-44 rounded-full border border-white/10 bg-white/5" /><p className="relative text-sm text-emerald-100">{greeting()}{name ? `، ${name}` : ''} 👋</p>
+        <h1 className="relative mt-2 text-3xl font-bold leading-tight text-white sm:text-4xl">وش أسوي اليوم؟</h1>
+        <p className="relative mt-3 text-xs text-emerald-100">{formatWeekday(today)} {formatDate(today)} · {formatHijri(today)}</p>
       </header>
 
-      <nav aria-label="إجراءات سريعة" className="grid grid-cols-3 gap-2 sm:gap-3"><Link to="/budget#add" className="rounded-2xl border border-ink-100 bg-white p-4 text-center text-sm font-bold text-brand-700 shadow-sm hover:border-brand-500">＋ مصروف</Link><Link to="/goals" className="rounded-2xl border border-ink-100 bg-white p-4 text-center text-sm font-bold text-brand-700 shadow-sm hover:border-brand-500">◎ أهدافي</Link><Link to="/challenges" className="rounded-2xl border border-ink-100 bg-white p-4 text-center text-sm font-bold text-brand-700 shadow-sm hover:border-brand-500">🏆 التحديات</Link></nav>
+      <nav aria-label="إجراءات سريعة" className="grid grid-cols-3 gap-2 sm:gap-3"><Link to="/budget#add" className="flex min-h-20 flex-col items-center justify-center rounded-2xl border border-ink-100 bg-white px-2 py-4 text-center text-sm font-bold text-brand-700 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-500 hover:shadow-md focus-visible:outline-2">＋ مصروف</Link><Link to="/goals" className="rounded-2xl border border-ink-100 bg-white p-4 text-center text-sm font-bold text-brand-700 shadow-sm hover:border-brand-500">◎ أهدافي</Link><Link to="/challenges" className="rounded-2xl border border-ink-100 bg-white p-4 text-center text-sm font-bold text-brand-700 shadow-sm hover:border-brand-500">🏆 التحديات</Link></nav>
       {loading && !data && <PageLoader />}
       {error && (
         <Alert tone="error">
@@ -108,7 +108,7 @@ export default function DashboardPage() {
                 ))}
               </ul>
             )}
-            <p className="mt-3 text-xs text-ink-500">تذكيرات داخل التطبيق فقط؛ إشعارات الجوال خارج التطبيق تحتاج تفعيلًا منفصلًا.</p>
+            <p className="mt-3 text-xs text-ink-500">إذا فعّلت إشعارات الجوال من الإعدادات، تصلك التذكيرات المؤهلة أيضًا عبر الإشعارات اليومية.</p>
           </Card>
 
           {data.goals.length > 0 && (
