@@ -8,12 +8,15 @@ const respond = (body: unknown, status = 200) => new Response(JSON.stringify(bod
 const env = (name: string) => Deno.env.get(name) ?? ''
 async function authorized(request: Request): Promise<boolean> {
   const bearer = request.headers.get('authorization') ?? ''
-  const expected = 'Bearer ' + env('SUPABASE_SERVICE_ROLE_KEY')
-  if (!env('SUPABASE_SERVICE_ROLE_KEY') || bearer.length !== expected.length) return false
-  const a = new TextEncoder().encode(bearer), b = new TextEncoder().encode(expected)
-  let diff = 0
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
-  return diff === 0
+  if (!bearer.startsWith('Bearer ')) return false
+  const token = bearer.slice(7)
+  if (!token || !env('SUPABASE_SERVICE_ROLE_KEY')) return false
+  // The scheduler key is stored in Vault. Check equality server-side using a
+  // service-role-only RPC rather than assuming Supabase's injected key matches
+  // the project's legacy service_role JWT.
+  const sb = createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), { auth: { persistSession: false } })
+  const { data, error } = await sb.rpc('verify_dabbir_push_scheduler_token', { candidate: token })
+  return !error && data === true
 }
 function todayRiyadh(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
