@@ -31,7 +31,9 @@ Deno.serve(async (request: Request) => {
   if (request.method !== 'POST') return respond({ error: 'method_not_allowed' }, 405)
   if (!await authorized(request)) return respond({ error: 'unauthorized' }, 401)
   if (!publicKey || !privateKey || !env('VAPID_SUBJECT')) return respond({ error: 'push_not_configured' }, 503)
-  webpush.setVapidDetails(env('VAPID_SUBJECT'), publicKey, privateKey)
+  const subjectRaw = env('VAPID_SUBJECT').trim()
+  const subject = subjectRaw.includes('://') || subjectRaw.startsWith('mailto:') ? subjectRaw : 'mailto:' + subjectRaw
+  webpush.setVapidDetails(subject, publicKey, privateKey)
   const sb = createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), { auth: { persistSession: false } })
   const day = todayRiyadh()
   // Page through subscriptions, with an explicit cap to avoid unbounded invocation costs.
