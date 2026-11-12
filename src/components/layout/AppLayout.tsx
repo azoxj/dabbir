@@ -10,7 +10,7 @@ type InstallPromptEvent = Event & {
 
 function InstallAppBanner() {
   const [promptEvent, setPromptEvent] = useState<InstallPromptEvent | null>(null)
-  const [installed, setInstalled] = useState(() => window.matchMedia('(display-mode: standalone)').matches ||
+  const [installed, setInstalled] = useState(() => (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches) ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true)
   const [showHelp, setShowHelp] = useState(false)
 
