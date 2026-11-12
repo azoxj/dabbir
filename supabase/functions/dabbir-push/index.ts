@@ -1,6 +1,8 @@
 // Supabase Edge Function. Public GET exposes only VAPID public key.
 // POST is reserved for the server-side scheduler with a service-role bearer token.
 import webpush from 'npm:web-push@3.6.7'
+import { createECDH } from 'node:crypto'
+import { Buffer } from 'node:buffer'
 import { createClient } from 'npm:@supabase/supabase-js@2.119.0'
 
 const headers = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'authorization,content-type' }
@@ -33,6 +35,17 @@ Deno.serve(async (request: Request) => {
   if (!publicKey || !privateKey || !env('VAPID_SUBJECT')) return respond({ error: 'push_not_configured' }, 503)
   const subjectRaw = env('VAPID_SUBJECT').trim()
   const subject = subjectRaw.includes('://') || subjectRaw.startsWith('mailto:') ? subjectRaw : 'mailto:' + subjectRaw
+  try {
+    const ecdh = createECDH('prime256v1')
+    ecdh.setPrivateKey(Buffer.from(privateKey.trim(), 'base64url'))
+    if (ecdh.getPublicKey().toString('base64url') !== publicKey.trim()) {
+      console.error('VAPID key pair mismatch: public key does not correspond to private key')
+      return respond({ error: 'vapid_key_pair_mismatch' }, 503)
+    }
+  } catch (e) {
+    console.error('VAPID key validation failed', e instanceof Error ? e.message : 'unknown')
+    return respond({ error: 'invalid_vapid_key_material' }, 503)
+  }
   webpush.setVapidDetails(subject, publicKey, privateKey)
   const sb = createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), { auth: { persistSession: false } })
   const day = todayRiyadh()
