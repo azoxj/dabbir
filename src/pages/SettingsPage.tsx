@@ -11,6 +11,7 @@ import { useProfile } from '@/hooks/useFinance'
 import { useRepository } from '@/hooks/useRepository'
 import { useToast } from '@/hooks/useToast'
 import { toAppError } from '@/services/errors'
+import { canRequestNotifications, requestReminderPermission } from '@/lib/pushPermission'
 
 /** الملف الشخصي والإعدادات. */
 export default function SettingsPage() {
@@ -74,6 +75,17 @@ export default function SettingsPage() {
       {profile.data && (
         <PreferencesCard profile={profile.data} onSave={async (patch) => { await profile.update(patch); toast.show('تم حفظ التفضيلات ✓') }} />
       )}
+
+      <Card>
+        <CardTitle>إشعارات الجوال (تجريبي)</CardTitle>
+        <p className="mb-3 text-sm text-ink-600">يمكنك السماح بإشعارات دبّر. تفعيل الإذن لا يعني أن التذكيرات ستصل تلقائيًا بعد إغلاق التطبيق؛ خدمة إرسال الإشعارات المجدولة لم تكتمل بعد.</p>
+        <Button variant="secondary" block disabled={!canRequestNotifications()} onClick={() => {
+          void requestReminderPermission().then((permission) => {
+            toast.show(permission === 'granted' ? 'تم السماح بالإشعارات. الإرسال التلقائي غير مفعل بعد.' : 'لم يتم السماح بالإشعارات')
+          }).catch((e: unknown) => toast.show(toAppError(e).message, 'error'))
+        }}>طلب إذن إشعارات الجوال</Button>
+        {!canRequestNotifications() && <p className="mt-2 text-xs text-ink-500">على الآيفون: افتح الموقع من Safari ثم أضفه للشاشة الرئيسية وافتحه من الأيقونة.</p>}
+      </Card>
 
       <BackupCard onImported={() => void profile.reload()} />
 
