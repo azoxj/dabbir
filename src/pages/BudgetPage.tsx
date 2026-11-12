@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { TrashIcon } from '@/components/icons/Icons'
-import { BankImportCard } from '@/components/budget/BankImportCard'
 import { PageHeader } from '@/components/layout/AppLayout'
 import { Alert, AmountField, Button, Card, CardTitle, EmptyState, PageLoader, ProgressBar, SelectField, Stat, TextField } from '@/components/ui'
 import { useCommitments } from '@/hooks/useCommitments'
@@ -71,7 +70,6 @@ export default function BudgetPage() {
         onAdd={async (c) => { await commitments.add(c); toast.show('تمت إضافة التكلفة الثابتة ✓') }} />
 
       <AddExpenseCard today={today} onAdd={async (e) => { await expenses.add(e); toast.show('تمت إضافة المصروف ✓') }} />
-      <BankImportCard today={today} expenses={expenses.data} onAdd={async (e) => { await expenses.add(e) }} />
 
       <Card>
         <CardTitle>حسب الفئة</CardTitle>
