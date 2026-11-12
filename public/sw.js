@@ -60,3 +60,30 @@ self.addEventListener('fetch', (event) => {
     })())
   }
 })
+
+/* Web Push: show only generic notification text. Financial details must not
+ * appear on the lock screen. The backend must authenticate subscriptions and
+ * schedule deliveries separately. */
+self.addEventListener('push', (event) => {
+  let payload = {}
+  try { payload = event.data ? event.data.json() : {} } catch { /* malformed payload */ }
+  if (payload && payload.type !== 'dabbir-reminder') return
+  event.waitUntil(self.registration.showNotification('دبّر — عندك تذكير مالي', {
+    body: 'افتح دبّر لمراجعة أهدافك والتزاماتك.',
+    icon: BASE + 'icons/icon-192.png',
+    badge: BASE + 'icons/icon-192.png',
+    tag: 'dabbir-reminder',
+    data: { url: BASE },
+  }))
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  event.waitUntil((async () => {
+    const url = new URL(BASE, self.location.origin).href
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const existing = windows.find((client) => new URL(client.url).origin === self.location.origin && new URL(client.url).pathname.startsWith(BASE))
+    if (existing) { await existing.focus(); return }
+    await self.clients.openWindow(url)
+  })())
+})

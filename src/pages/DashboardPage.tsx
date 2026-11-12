@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { dueReminders } from '@/lib/reminders'
 import { Link } from 'react-router-dom'
 import { Alert, buttonClasses, Card, CardTitle, PageLoader, ProgressBar, Stat } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
@@ -31,13 +32,14 @@ export default function DashboardPage() {
   const name = data?.profile.displayName || user?.displayName
 
   return (
-    <div className="space-y-4">
-      <header>
-        <p className="text-sm text-ink-500">{greeting()}{name ? `، ${name}` : ''} 👋</p>
-        <h1 className="mt-1 text-3xl font-bold text-ink-900">وش أسوي اليوم؟</h1>
-        <p className="mt-1 text-xs text-ink-500">{formatWeekday(today)} {formatDate(today)}{data?.profile.showHijri !== false && ` · ${formatHijri(today)}`}</p>
+    <div className="space-y-6">
+      <header className="rounded-3xl bg-gradient-to-bl from-emerald-950 via-teal-900 to-emerald-700 px-6 py-8 text-white shadow-lg shadow-emerald-950/10 sm:px-8">
+        <p className="text-sm text-emerald-100">{greeting()}{name ? `، ${name}` : ''} 👋</p>
+        <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">وش أسوي اليوم؟</h1>
+        <p className="mt-3 text-xs text-emerald-100">{formatWeekday(today)} {formatDate(today)} · {formatHijri(today)}</p>
       </header>
 
+      <nav aria-label="إجراءات سريعة" className="grid grid-cols-3 gap-2 sm:gap-3"><Link to="/budget#add" className="rounded-2xl border border-ink-100 bg-white p-4 text-center text-sm font-bold text-brand-700 shadow-sm hover:border-brand-500">＋ مصروف</Link><Link to="/goals" className="rounded-2xl border border-ink-100 bg-white p-4 text-center text-sm font-bold text-brand-700 shadow-sm hover:border-brand-500">◎ أهدافي</Link><Link to="/challenges" className="rounded-2xl border border-ink-100 bg-white p-4 text-center text-sm font-bold text-brand-700 shadow-sm hover:border-brand-500">🏆 التحديات</Link></nav>
       {loading && !data && <PageLoader />}
       {error && (
         <Alert tone="error">
@@ -72,7 +74,7 @@ export default function DashboardPage() {
           </Card>
 
           <Card>
-            <CardTitle action={<span className="flex gap-3"><Link to="/reports" className="text-sm font-bold text-brand-600">التقارير</Link><Link to="/budget" className="text-sm font-bold text-brand-600">التفاصيل</Link></span>}>ميزانية هذا الشهر</CardTitle>
+            <CardTitle action={<Link to="/budget" className="text-sm font-bold text-brand-600">التفاصيل</Link>}>ميزانية هذا الشهر</CardTitle>
             <div className="grid grid-cols-2 gap-2.5">
               <Stat label="تقدر تصرف اليوم" value={formatSAR(plan.summary.dailyAllowance)} tone={plan.summary.dailyAllowance > 0 ? 'brand' : 'danger'} />
               <Stat label="المتبقي بعد الالتزامات" value={formatSAR(plan.summary.availableAfterCommitments)} tone={plan.summary.availableAfterCommitments < 0 ? 'danger' : 'ink'} />
@@ -91,7 +93,23 @@ export default function DashboardPage() {
             <Link to="/budget#add" className={clsx(buttonClasses('secondary', { block: true }), 'mt-4')}>+ سجّل مصروف</Link>
           </Card>
 
-          <UpcomingCard commitments={data.commitments} today={today} alertDays={data.profile.alertDays} />
+          <UpcomingCard commitments={data.commitments} today={today} />
+
+          <Card>
+            <CardTitle>تذكيرات الأهداف والالتزامات</CardTitle>
+            {dueReminders(today, data.commitments, data.goals, data.profile.alertDays).length === 0 ? (
+              <p className="text-sm text-ink-500">ما عندك مواعيد قريبة تحتاج تذكير.</p>
+            ) : (
+              <ul className="space-y-2" aria-label="تذكيرات اليوم">
+                {dueReminders(today, data.commitments, data.goals, data.profile.alertDays).map(item => (
+                  <li key={item.id} className="rounded-xl border border-ink-100 p-3 text-sm">
+                    <p className="font-bold">{item.title}</p><p className="text-ink-600">{item.detail}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-3 text-xs text-ink-500">تذكيرات داخل التطبيق فقط؛ إشعارات الجوال خارج التطبيق تحتاج تفعيلًا منفصلًا.</p>
+          </Card>
 
           {data.goals.length > 0 && (
             <Card>
@@ -115,7 +133,7 @@ export default function DashboardPage() {
   )
 }
 
-function UpcomingCard({ commitments, today, alertDays }: { commitments: Commitment[]; today: ISODate; alertDays: number }) {
+function UpcomingCard({ commitments, today }: { commitments: Commitment[]; today: ISODate }) {
   const upcoming = sortCommitments(commitments.filter((c) => !c.done)).slice(0, 4)
   return (
     <Card>
@@ -125,7 +143,7 @@ function UpcomingCard({ commitments, today, alertDays }: { commitments: Commitme
       ) : (
         <ul className="divide-y divide-ink-100">
           {upcoming.map((c) => {
-            const st = dueStatus(c, today, alertDays)
+            const st = dueStatus(c, today)
             return (
               <li key={c.id} className="flex items-center justify-between gap-2 py-2.5">
                 <span className="min-w-0 truncate font-medium">{c.title}</span>
