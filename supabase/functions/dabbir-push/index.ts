@@ -27,7 +27,7 @@ function daysUntil(day: string, target: string): number {
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers })
   const publicKey = env('VAPID_PUBLIC_KEY'), privateKey = env('VAPID_PRIVATE_KEY')
-  if (request.method === 'GET') return publicKey ? respond({ publicKey }) : respond({ error: 'push_not_configured' }, 503)
+  if (request.method === 'GET') return publicKey ? respond({ publicKey, ready: Boolean(privateKey && env('VAPID_SUBJECT')), missing: [!privateKey && 'VAPID_PRIVATE_KEY', !env('VAPID_SUBJECT') && 'VAPID_SUBJECT'].filter(Boolean) }) : respond({ error: 'push_not_configured', missing: ['VAPID_PUBLIC_KEY'] }, 503)
   if (request.method !== 'POST') return respond({ error: 'method_not_allowed' }, 405)
   if (!await authorized(request)) return respond({ error: 'unauthorized' }, 401)
   if (!publicKey || !privateKey || !env('VAPID_SUBJECT')) return respond({ error: 'push_not_configured' }, 503)
