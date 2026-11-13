@@ -4,7 +4,7 @@ import { Divider, GoogleButton } from '@/components/auth/GoogleButton'
 import { ResendConfirmation } from '@/components/auth/ResendConfirmation'
 import { AuthLayout } from '@/components/layout/AuthLayout'
 import { Alert, Button, TextField } from '@/components/ui'
-import { enterDemoMode, getRuntimeMode, realAccountsAvailable } from '@/config/mode'
+import { getRuntimeMode } from '@/config/mode'
 import { useAuth } from '@/hooks/useAuth'
 import { validateEmail } from '@/services/auth'
 import { takeAuthRedirectError } from '@/services/auth/redirectError'
@@ -77,11 +77,6 @@ export default function LoginPage() {
       {isDemo && service.signInAsGuest && (
         <Button type="button" variant="ghost" block className="mt-3" onClick={guest} disabled={loading}>
           جرّب التطبيق ببيانات تجريبية
-        </Button>
-      )}
-      {!isDemo && realAccountsAvailable && (
-        <Button type="button" variant="ghost" block className="mt-3" onClick={enterDemoMode} disabled={loading}>
-          جرّب بدون حساب (وضع تجريبي محلي)
         </Button>
       )}
       <p className="mt-6 text-center text-sm text-ink-600">
