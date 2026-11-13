@@ -54,11 +54,11 @@ try {
   const nav = (p, name) => p.getByRole('navigation', { name: 'القائمة الرئيسية' }).getByRole('link', { name, exact: true })
   const overflow = (p) => p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
 
-  await check('real-mode login page: no demo banner, demo offered separately', async () => {
+  await check('real-mode login page: demo entry removed', async () => {
     await p1.goto(BASE)
     await p1.getByRole('heading', { name: 'تسجيل الدخول' }).waitFor()
     assert(await p1.getByTestId('demo-banner').count() === 0, 'demo banner shown in real mode')
-    await p1.getByRole('button', { name: 'جرّب بدون حساب (وضع تجريبي محلي)' }).waitFor()
+    assert(await p1.getByRole('button', { name: 'جرّب بدون حساب (وضع تجريبي محلي)' }).count() === 0, 'demo entry still visible')
   })
 
   let signupAt
@@ -292,29 +292,6 @@ try {
       await p.getByText(text).waitFor()
     }
     assert(await p.getByText('غداء عمل').count() === 0, 'A data visible to B')
-    await ctx.close()
-  })
-
-  await check('demo mode is fully separate: local guest data, zero requests to Supabase, exit returns to real login', async () => {
-    const ctx = await browser.newContext({ ...devices['Pixel 7'] })
-    const p = await ctx.newPage()
-    let apiCalls = 0
-    await p.goto(BASE + 'login')
-    p.on('request', (r) => { if (r.url().startsWith(API)) apiCalls++ })
-    await p.getByRole('button', { name: 'جرّب بدون حساب (وضع تجريبي محلي)' }).click()
-    await p.getByRole('heading', { name: 'وش أسوي اليوم؟' }).waitFor({ timeout: 15000 })
-    await p.getByTestId('demo-banner').waitFor()
-    await p.getByTestId('today-plan').getByText('متأخر: فاتورة الجوال').waitFor()
-    await nav(p, 'الميزانية').click()
-    await p.getByLabel('المبلغ (ر.س)').fill('10')
-    await p.getByRole('button', { name: 'إضافة المصروف' }).click()
-    await p.getByText('تمت إضافة المصروف ✓').waitFor()
-    const keys = await p.evaluate(() => Object.keys(localStorage))
-    assert(!keys.some((k) => k.startsWith('sb-')), 'supabase session stored in demo')
-    assert(apiCalls === 0, `${apiCalls} requests to Supabase from demo mode`)
-    await p.getByRole('button', { name: 'الخروج إلى الحسابات الحقيقية' }).click()
-    await p.getByRole('heading', { name: 'تسجيل الدخول' }).waitFor()
-    assert(await p.getByTestId('demo-banner').count() === 0, 'still in demo after exit')
     await ctx.close()
   })
 
